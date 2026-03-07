@@ -1,0 +1,12 @@
+{
+    "background.fullscreen": {
+        "images": [
+            "https://i.pinimg.com/1200x/93/d3/07/93d3078e18efac4a30de609a93b5ec86.jpg"
+        ],
+        "opacity": 0.1,
+        "size": "cover",
+        "position": "center",
+        "interval": 0,
+        "random": false
+    }
+}
