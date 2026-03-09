@@ -16,9 +16,10 @@ class FridgePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeProducts = ref.watch(filteredFridgeProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -29,17 +30,17 @@ class FridgePage extends ConsumerWidget {
             floating: true,
             pinned: true,
             elevation: 0,
-            backgroundColor: AppColors.background.withValues(alpha: 0.8),
+            backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.8),
             flexibleSpace: FlexibleSpaceBar(
               background: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(color: Colors.transparent),
               ),
               titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              title: const Text(
+              title: Text(
                 "Твой Холодильник",
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w800,
                   fontSize: 20,
                   letterSpacing: -0.5,
@@ -136,10 +137,10 @@ class FridgePage extends ConsumerWidget {
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, 4))
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
         ],
       ),
       child: TextField(
@@ -175,7 +176,6 @@ class FridgePage extends ConsumerWidget {
           label: "Съедено",
         ),
         confirmDismiss: (direction) async {
-          // Выполняем действие
           if (direction == DismissDirection.startToEnd) {
             ref.read(fridgeControllerProvider.notifier).markAsSpoiled(product.id);
           } else {
@@ -184,7 +184,6 @@ class FridgePage extends ConsumerWidget {
 
           final actionText = direction == DismissDirection.startToEnd ? 'выброшен' : 'съеден';
 
-          // Показываем SnackBar с Undo
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -204,7 +203,7 @@ class FridgePage extends ConsumerWidget {
 
           return true;
         },
-        child: _buildProductCard(product),
+        child: _buildProductCard(context, product),
       ),
     );
   }
@@ -224,19 +223,20 @@ class FridgePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildProductCard(Product product) {
+  Widget _buildProductCard(BuildContext context, Product product) {
+    final theme = Theme.of(context);
     final status = product.freshnessStatus;
     final isUrgent = status == FreshnessStatus.urgent || status == FreshnessStatus.spoiled;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: AppColors.shadow, blurRadius: 15, offset: const Offset(0, 8))
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))
         ],
-        border: isUrgent ? Border.all(color: AppColors.accent.withValues(alpha: 0.3), width: 2) : Border.all(color: Colors.transparent, width: 2),
+        border: isUrgent ? Border.all(color: AppColors.accent.withOpacity(0.3), width: 2) : Border.all(color: Colors.transparent, width: 2),
       ),
       child: Row(
         children: [
@@ -244,7 +244,7 @@ class FridgePage extends ConsumerWidget {
           Container(
             width: 60, height: 60,
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color: theme.scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Center(child: Text(product.emoji, style: const TextStyle(fontSize: 30))),
@@ -257,15 +257,15 @@ class FridgePage extends ConsumerWidget {
               children: [
                 Text(
                   product.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: theme.colorScheme.onSurface),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "${product.category} • Куплено ${product.purchaseDate.day}.${product.purchaseDate.month}",
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
                 ),
                 const SizedBox(height: 8),
-                _buildFreshnessIndicator(product),
+                _buildFreshnessIndicator(context, product),
               ],
             ),
           ),
@@ -274,7 +274,8 @@ class FridgePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildFreshnessIndicator(Product product) {
+  Widget _buildFreshnessIndicator(BuildContext context, Product product) {
+    final theme = Theme.of(context);
     Color statusColor;
     String statusText;
     double progress;
@@ -283,7 +284,7 @@ class FridgePage extends ConsumerWidget {
 
     switch (product.freshnessStatus) {
       case FreshnessStatus.spoiled:
-        statusColor = AppColors.textSecondary;
+        statusColor = theme.colorScheme.onSurface.withOpacity(0.4);
         statusText = "Испорчено";
         progress = 0.0;
         break;
@@ -311,7 +312,7 @@ class FridgePage extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(statusText, style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold)),
-            Text(product.freshnessStatus == FreshnessStatus.spoiled ? "Просрочено" : "Осталось дней: $days", style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+            Text(product.freshnessStatus == FreshnessStatus.spoiled ? "Просрочено" : "Осталось дней: $days", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5), fontSize: 11)),
           ],
         ),
         const SizedBox(height: 4),
@@ -320,7 +321,7 @@ class FridgePage extends ConsumerWidget {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 4,
-            backgroundColor: AppColors.background,
+            backgroundColor: theme.scaffoldBackgroundColor,
             valueColor: AlwaysStoppedAnimation<Color>(statusColor),
           ),
         ),
@@ -329,19 +330,18 @@ class FridgePage extends ConsumerWidget {
   }
 }
 
-// Делегат для прилипающей полосы категорий
 class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
   final WidgetRef ref;
   _CategoryHeaderDelegate(this.ref);
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final theme = Theme.of(context);
     final selectedCategory = ref.watch(fridgeCategoryProvider);
-    
     final categories = ['Все', 'Мясо', 'Молочка', 'Овощи', 'Фрукты', 'Напитки', 'Другое'];
 
     return Container(
-      color: AppColors.background,
+      color: theme.scaffoldBackgroundColor,
       height: 60,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -350,30 +350,31 @@ class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
         itemCount: categories.length,
         itemBuilder: (context, index) {
           final cat = categories[index];
-          return _categoryChip(cat, selectedCategory == cat);
+          return _categoryChip(context, cat, selectedCategory == cat);
         },
       ),
     );
   }
 
-  Widget _categoryChip(String title, bool isSelected) {
+  Widget _categoryChip(BuildContext context, String title, bool isSelected) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () => ref.read(fridgeCategoryProvider.notifier).state = title,
       child: Container(
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surface,
+          color: isSelected ? AppColors.primary : theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            if (isSelected) BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))
+            if (isSelected) BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))
           ],
         ),
         alignment: Alignment.center,
         child: Text(
           title,
           style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.textPrimary,
+            color: isSelected ? Colors.white : theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 13,
           ),

@@ -22,17 +22,18 @@ class MainPage extends StatelessWidget {
       ],
       builder: (context, child) {
         final tabsRouter = AutoTabsRouter.of(context);
+        final theme = Theme.of(context);
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: theme.scaffoldBackgroundColor,
           body: child,
           bottomNavigationBar: Container(
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: theme.cardColor,
               boxShadow: [
                 BoxShadow(
                   blurRadius: 20,
-                  color: Colors.black.withValues(alpha: .1),
+                  color: Colors.black.withOpacity(0.05),
                 )
               ],
             ),
@@ -47,29 +48,29 @@ class MainPage extends StatelessWidget {
                   iconSize: 24,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   duration: const Duration(milliseconds: 400),
-                  tabBackgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  tabBackgroundColor: AppColors.primary.withOpacity(0.1),
                   color: AppColors.textSecondary,
-                  tabs: const [
-                    GButton(
+                  tabs: [
+                    const GButton(
                       icon: LineIcons.home,
                       text: 'Дом',
                     ),
-                    GButton(
+                    const GButton(
                       icon: LineIcons.utensils,
                       text: 'Холод',
                     ),
-                    GButton(
+                    const GButton(
                       icon: LineIcons.qrcode,
                       text: 'Скан',
                       iconActiveColor: AppColors.primary,
                       iconColor: AppColors.primary,
                       textColor: AppColors.primary,
                     ),
-                    GButton(
+                    const GButton(
                       icon: LineIcons.bookReader,
                       text: 'Рецепты',
                     ),
-                    GButton(
+                    const GButton(
                       icon: LineIcons.user,
                       text: 'Профиль',
                     ),

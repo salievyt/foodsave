@@ -56,7 +56,7 @@ class _SupportChatPageState extends State<SupportChatPage> {
         }
       }
     } catch (e) {
-      print("Error fetching history: $e");
+      debugPrint("Error fetching history: $e");
     }
   }
 
@@ -65,7 +65,6 @@ class _SupportChatPageState extends State<SupportChatPage> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('access_token');
       
-      // Use the same IP as ApiService
       final url = 'ws://193.160.209.227:8000/ws/support_chat/?token=$token';
       _channel = WebSocketChannel.connect(Uri.parse(url));
       
@@ -85,10 +84,10 @@ class _SupportChatPageState extends State<SupportChatPage> {
           _scrollToBottom();
         }
       }, onError: (err) {
-        print("WS Error: $err");
+        debugPrint("WS Error: $err");
       });
     } catch (e) {
-      print("WS Connect Error: $e");
+      debugPrint("WS Connect Error: $e");
     }
   }
 
@@ -116,11 +115,9 @@ class _SupportChatPageState extends State<SupportChatPage> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    // Send via WebSocket
     if (_channel != null) {
       _channel!.sink.add(jsonEncode({'message': text}));
       
-      // Local update for immediate feedback
       setState(() {
         _messages.add({
           'isUser': true,
@@ -135,13 +132,16 @@ class _SupportChatPageState extends State<SupportChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Тех. Поддержка'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.primary,
         elevation: 0,
         centerTitle: true,
+        titleTextStyle: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
@@ -165,14 +165,14 @@ class _SupportChatPageState extends State<SupportChatPage> {
                       maxWidth: MediaQuery.of(context).size.width * 0.75,
                     ),
                     decoration: BoxDecoration(
-                      color: isUser ? AppColors.primary : AppColors.surface,
+                      color: isUser ? AppColors.primary : theme.cardColor,
                       borderRadius: BorderRadius.circular(16).copyWith(
                         bottomRight: isUser ? const Radius.circular(0) : const Radius.circular(16),
                         bottomLeft: isUser ? const Radius.circular(16) : const Radius.circular(0),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.shadow,
+                          color: Colors.black.withOpacity(0.05),
                           offset: const Offset(0, 2),
                           blurRadius: 8,
                         ),
@@ -184,7 +184,7 @@ class _SupportChatPageState extends State<SupportChatPage> {
                         Text(
                           message['text'] as String,
                           style: TextStyle(
-                            color: isUser ? Colors.white : AppColors.textPrimary,
+                            color: isUser ? Colors.white : theme.colorScheme.onSurface,
                             fontSize: 16,
                           ),
                         ),
@@ -192,7 +192,7 @@ class _SupportChatPageState extends State<SupportChatPage> {
                         Text(
                           message['time'] as String,
                           style: TextStyle(
-                            color: isUser ? Colors.white70 : AppColors.textSecondary,
+                            color: isUser ? Colors.white70 : theme.colorScheme.onSurface.withOpacity(0.5),
                             fontSize: 12,
                           ),
                         ),
@@ -206,9 +206,9 @@ class _SupportChatPageState extends State<SupportChatPage> {
           Container(
             padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: theme.cardColor,
               boxShadow: [
-                BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, -5))
+                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))
               ],
             ),
             child: Row(
@@ -216,10 +216,12 @@ class _SupportChatPageState extends State<SupportChatPage> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                     decoration: InputDecoration(
                       hintText: 'Введите сообщение...',
+                      hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4)),
                       filled: true,
-                      fillColor: AppColors.background,
+                      fillColor: theme.scaffoldBackgroundColor,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
@@ -249,4 +251,3 @@ class _SupportChatPageState extends State<SupportChatPage> {
     );
   }
 }
-

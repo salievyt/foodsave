@@ -165,7 +165,7 @@ class ProfilePage extends ConsumerWidget {
                           Switch.adaptive(
                             value: isDark,
                             onChanged: (_) => ref.read(themeModeProvider.notifier).toggle(),
-                            activeColor: AppColors.primary,
+                            activeTrackColor: AppColors.primary,
                           ),
                         ],
                       ),

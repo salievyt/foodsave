@@ -1,9 +1,9 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/features/fridge/presentation/controllers/fridge_controller.dart';
+import 'package:food_save/features/fridge/domain/models/product.dart';
 
 @RoutePage()
 class StatisticsPage extends ConsumerWidget {
@@ -11,263 +11,121 @@ class StatisticsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controller = ref.read(fridgeControllerProvider.notifier);
-    final eaten = controller.totalEaten;
-    final spoiled = controller.totalSpoiled;
-    final active = controller.totalActive;
-    final total = controller.totalProducts;
+    final products = ref.watch(fridgeControllerProvider);
 
-    final efficiency = (eaten + spoiled) > 0
-        ? ((eaten / (eaten + spoiled)) * 100).toInt()
-        : 100;
+    final eaten = products.where((p) => p.isEaten).length;
+    final spoiled = products.where((p) => p.isSpoiled).length;
+    final active = products.where((p) => !p.isEaten && !p.isSpoiled).length;
+    final total = products.length;
 
-    // Estimated savings (mock: ~200 тг per product saved)
-    final savedMoney = eaten * 200;
+    final efficiency = total == 0 ? 0 : (eaten / total * 100).round();
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 120,
-            floating: true,
-            backgroundColor: AppColors.background,
-            elevation: 0,
-            leading: IconButton(
-              onPressed: () => context.router.maybePop(),
-              icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.symmetric(horizontal: 60, vertical: 16),
-              centerTitle: false,
-              title: const Text(
-                "Статистика",
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 22,
-                  letterSpacing: -0.5,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text("Статистика"),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          color: theme.colorScheme.onSurface,
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            // Efficiency Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, Color(0xFF62D2A2)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  )
+                ],
               ),
-            ),
-          ),
-
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  // Efficiency hero card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      color: AppColors.textPrimary,
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.textPrimary.withValues(alpha: 0.2),
-                          blurRadius: 25,
-                          offset: const Offset(0, 15),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          "Эффективность",
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: 120,
-                          height: 120,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                width: 120,
-                                height: 120,
-                                child: CircularProgressIndicator(
-                                  value: efficiency / 100,
-                                  strokeWidth: 10,
-                                  backgroundColor: Colors.white10,
-                                  color: efficiency >= 70
-                                      ? AppColors.fresh
-                                      : efficiency >= 40
-                                          ? AppColors.warning
-                                          : AppColors.primary,
-                                  strokeCap: StrokeCap.round,
-                                ),
-                              ),
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    "$efficiency%",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  const Text(
-                                    "спасено",
-                                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          efficiency >= 70
-                              ? "Отличная работа! 🌟"
-                              : efficiency >= 40
-                                  ? "Неплохо, но можно лучше 💪"
-                                  : "Давайте спасать больше еды! 🍀",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Stats grid
-                  Row(
-                    children: [
-                      _statCard("$eaten", "Съедено", "🍽️", AppColors.fresh),
-                      const SizedBox(width: 12),
-                      _statCard("$spoiled", "Выброшено", "🗑️", AppColors.accent),
-                    ],
+                  const Text(
+                    "Эффективность спасения еды",
+                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _statCard("$active", "В холодильнике", "🧊", AppColors.primary),
-                      const SizedBox(width: 12),
-                      _statCard("$total", "Всего добавлено", "📊", AppColors.warning),
-                    ],
+                  Text(
+                    "$efficiency%",
+                    style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.w900, letterSpacing: -1),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Savings card
+                  const SizedBox(height: 12),
                   Container(
+                    height: 8,
                     width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.fresh,
-                          AppColors.fresh.withValues(alpha: 0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.fresh.withValues(alpha: 0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        const Text("💰", style: TextStyle(fontSize: 40)),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Примерно сэкономлено",
-                                style: TextStyle(color: Colors.white70, fontSize: 13),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "~$savedMoney ₸",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: efficiency / 100,
+                      child: Container(decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Tips section
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 15, offset: const Offset(0, 8))],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "💡 Советы",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 12),
-                        _tipRow("Проверяйте холодильник каждые 2-3 дня"),
-                        _tipRow("Готовьте из продуктов, которые скоро испортятся"),
-                        _tipRow("Покупайте меньше, но чаще — так продукты свежее"),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 120),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _statCard(String value, String label, String emoji, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, 6))],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 28)),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-              ),
+            const SizedBox(height: 24),
+
+            // Stats grid
+            Row(
+              children: [
+                _statCard(context, "$eaten", "Съедено", "🍽️", AppColors.fresh),
+                const SizedBox(width: 12),
+                _statCard(context, "$spoiled", "Выброшено", "🗑️", AppColors.accent),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _statCard(context, "$active", "В холодильнике", "🧊", AppColors.primary),
+                const SizedBox(width: 12),
+                _statCard(context, "$total", "Всего добавлено", "📊", AppColors.warning),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Tips section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 8))
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "💡 Советы по экономии",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 12),
+                  _tipRow(context, "Проверяйте холодильник каждые 2-3 дня"),
+                  _tipRow(context, "Готовьте из продуктов, которые скоро испортятся"),
+                  _tipRow(context, "Покупайте меньше, но чаще — так продукты свежее"),
+                ],
               ),
             ),
           ],
@@ -276,19 +134,47 @@ class StatisticsPage extends ConsumerWidget {
     );
   }
 
-  Widget _tipRow(String text) {
+  Widget _statCard(BuildContext context, String value, String label, String emoji, Color color) {
+    final theme = Theme.of(context);
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 6))
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+              child: Text(emoji, style: const TextStyle(fontSize: 20)),
+            ),
+            const SizedBox(height: 16),
+            Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: theme.colorScheme.onSurface)),
+            Text(label, style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5), fontSize: 13, fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tipRow(BuildContext context, String text) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("•  ", style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800)),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.4),
-            ),
+          Container(
+            width: 6, height: 6,
+            decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
           ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(text, style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.8), fontSize: 14))),
         ],
       ),
     );

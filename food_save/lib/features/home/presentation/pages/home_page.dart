@@ -22,91 +22,59 @@ class HomePage extends ConsumerWidget {
     final int soonCount = activeProducts.where((p) => p.freshnessStatus == FreshnessStatus.soon).length;
     final int urgentCount = activeProducts.where((p) => p.freshnessStatus == FreshnessStatus.urgent || p.freshnessStatus == FreshnessStatus.spoiled).length;
     
-    // For circular progress
     final double fillPercentage = activeProducts.length > 20 ? 1.0 : activeProducts.length / 20.0;
 
-    // Get urgent products for horizontal list
     final urgentProducts = activeProducts.where(
       (p) => p.freshnessStatus == FreshnessStatus.urgent || p.freshnessStatus == FreshnessStatus.soon
     ).toList();
 
-    // Stats
     final controller = ref.read(fridgeControllerProvider.notifier);
     final eaten = controller.totalEaten;
     final spoiled = controller.totalSpoiled;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          SliverAppBar(
-            expandedHeight: 120,
-            floating: true,
-            backgroundColor: AppColors.background,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              centerTitle: false,
-              title: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    "FoodSave",
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 22,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const Spacer(),
-                  _buildAvatar(ref),
-                ],
-              ),
-            ),
-          ),
-
+          _buildSliverAppBar(context, ref, theme),
+          
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tappable status card → Statistics
-                  GestureDetector(
-                    onTap: () => context.navigateTo(const StatisticsRoute()),
-                    child: _buildBentoStatus(fillPercentage, freshCount, soonCount, urgentCount),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Mini stats row
-                  if (eaten > 0 || spoiled > 0)
-                    Row(
-                      children: [
-                        _miniStatCard("$eaten", "Съедено", AppColors.fresh),
-                        const SizedBox(width: 12),
-                        _miniStatCard("$spoiled", "Выброшено", AppColors.accent),
-                      ],
-                    ),
-                  if (eaten > 0 || spoiled > 0) const SizedBox(height: 24),
-
+                   _buildGreeting(ref, theme),
+                  const SizedBox(height: 24),
+                  
+                  // Bento Grid
+                  _buildBentoGrid(context, fillPercentage, freshCount, soonCount, urgentCount, eaten, spoiled, theme, isDark),
+                  
+                  const SizedBox(height: 32),
                   _buildSectionHeader(
-                    title: "Срочно приготовить", 
+                    context,
+                    title: "Заканчивается срок", 
                     onTap: () => context.navigateTo(const FridgeRoute()),
                   ),
                   const SizedBox(height: 16),
-                  _buildExpiringHorizontalList(urgentProducts),
+                  _buildExpiringHorizontalList(urgentProducts, theme, isDark),
+                  
                   const SizedBox(height: 32),
-
-                  _buildScanAction(context),
+                  _buildScanAction(context, theme, isDark),
+                  
                   const SizedBox(height: 32),
-
                   _buildSectionHeader(
-                    title: "AI Рекомендации", 
+                    context,
+                    title: "Что приготовить?", 
                     onTap: () => context.navigateTo(const RecipesRoute()),
                   ),
                   const SizedBox(height: 16),
-                  _buildAIRecipeCard(context),
+                  _buildAIRecipeCard(context, theme, isDark),
+                  
                   const SizedBox(height: 120),
                 ],
               ),
@@ -117,86 +85,279 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  // --- UI КОМПОНЕНТЫ ---
-
-  Widget _buildAvatar(WidgetRef ref) {
-    final profileAsync = ref.watch(userProfileProvider);
-    return profileAsync.when(
-      data: (profile) => Container(
-        width: 40, height: 40,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
-          boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 10)],
-          image: profile.avatarUrl != null 
-            ? DecorationImage(image: NetworkImage(profile.avatarUrl!), fit: BoxFit.cover)
-            : null,
+  Widget _buildSliverAppBar(BuildContext context, WidgetRef ref, ThemeData theme) {
+    return SliverAppBar(
+      expandedHeight: 80,
+      collapsedHeight: 60,
+      pinned: true,
+      backgroundColor: theme.scaffoldBackgroundColor.withValues(alpha: 0.9),
+      elevation: 0,
+      flexibleSpace: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: FlexibleSpaceBar(
+            titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            centerTitle: false,
+            title: Row(
+              children: [
+                const Text(
+                  "FoodSave",
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 20,
+                    letterSpacing: -1,
+                  ),
+                ),
+                const Spacer(),
+                _buildAvatar(ref, theme),
+              ],
+            ),
+          ),
         ),
-        child: profile.avatarUrl == null 
-          ? const Icon(Icons.person_outline_rounded, size: 20, color: AppColors.primary)
-          : null,
-      ),
-      loading: () => const SizedBox(width: 40, height: 40, child: CircularProgressIndicator(strokeWidth: 2)),
-      error: (_, __) => Container(
-        width: 40, height: 40,
-        decoration: const BoxDecoration(color: AppColors.surface, shape: BoxShape.circle),
-        child: const Icon(Icons.error_outline, size: 20, color: Colors.red),
       ),
     );
   }
 
-  Widget _buildBentoStatus(double fillPercentage, int fresh, int soon, int urgent) {
+  Widget _buildGreeting(WidgetRef ref, ThemeData theme) {
+    final profileAsync = ref.watch(userProfileProvider);
+    final String name = profileAsync.maybeWhen(
+      data: (p) => p.username.split(' ').first,
+      orElse: () => "Друг",
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Привет, $name! 👋",
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          "Давай посмотрим, что в холодильнике.",
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBentoGrid(
+    BuildContext context, 
+    double fillPercentage, int fresh, int soon, int urgent,
+    int eaten, int spoiled,
+    ThemeData theme, bool isDark
+  ) {
+    return Column(
+      children: [
+        // Large status card
+        GestureDetector(
+          onTap: () => context.navigateTo(const StatisticsRoute()),
+          child: _buildMainStatusCard(fillPercentage, fresh, soon, urgent, theme, isDark),
+        ),
+        const SizedBox(height: 16),
+        // Two small cards
+        Row(
+          children: [
+            Expanded(
+              child: _buildMiniBentoCard(
+                title: "Съедено",
+                value: "$eaten",
+                icon: Icons.check_circle_rounded,
+                color: AppColors.fresh,
+                theme: theme,
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildMiniBentoCard(
+                title: "Испортилось",
+                value: "$spoiled",
+                icon: Icons.delete_outline_rounded,
+                color: AppColors.primary.withValues(alpha: 0.7),
+                theme: theme,
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMainStatusCard(double fillPercentage, int fresh, int soon, int urgent, ThemeData theme, bool isDark) {
     return Container(
-      height: 160,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.textPrimary,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark 
+            ? [const Color(0xFF2C2C2E), const Color(0xFF1C1C1E)]
+            : [Colors.white, const Color(0xFFF2F2F7)],
+        ),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.2),
-            blurRadius: 25,
-            offset: const Offset(0, 15),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
+        ],
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Заполненность",
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "${(fillPercentage * 100).toInt()}%",
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -1,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildIndicatorRow(fresh, soon, urgent, theme),
+              ],
+            ),
+          ),
+          _buildCircularProgress(fillPercentage, theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIndicatorRow(int fresh, int soon, int urgent, ThemeData theme) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 8,
+      children: [
+        if (urgent > 0) _indicatorDot(AppColors.primary, "$urgent", theme),
+        if (soon > 0) _indicatorDot(AppColors.warning, "$soon", theme),
+        _indicatorDot(AppColors.fresh, "$fresh", theme),
+      ],
+    );
+  }
+
+  Widget _indicatorDot(Color color, String count, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 6),
+          Text(
+            count,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCircularProgress(double value, ThemeData theme) {
+    return Container(
+      width: 100, height: 100,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withValues(alpha: 0.5),
+        shape: BoxShape.circle,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          ShaderMask(
+            shaderCallback: (rect) => LinearGradient(
+              colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.5)],
+            ).createShader(rect),
+            child: CircularProgressIndicator(
+              value: value, 
+              strokeWidth: 10, 
+              backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+              strokeCap: StrokeCap.round,
+            ),
+          ),
+          const Icon(Icons.inventory_2_rounded, color: AppColors.primary, size: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniBentoCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required ThemeData theme,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           )
         ],
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned(
-            right: -20, top: -20,
-            child: CircleAvatar(radius: 60, backgroundColor: Colors.white.withValues(alpha: 0.05)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 20),
           ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Твой холодильник", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                      const SizedBox(height: 4),
-                       Text("Заполнен на ${(fillPercentage * 100).toInt()}%", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                      const Spacer(),
-                      _buildMiniIndicator(fresh, soon, urgent),
-                    ],
-                  ),
-                ),
-                _buildCircularProgress(fillPercentage),
-              ],
+          const SizedBox(height: 16),
+          Text(
+            value,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: theme.colorScheme.onSurface,
             ),
           ),
-          // Tap hint
-          Positioned(
-            bottom: 12,
-            right: 20,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Статистика", style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
-                const SizedBox(width: 2),
-                Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.4), size: 14),
-              ],
+          Text(
+            title,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -204,97 +365,74 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildMiniIndicator(int fresh, int soon, int urgent) {
-    return Row(
-      children: [
-        if (urgent > 0) ...[
-          _dot(AppColors.accent, "$urgent"), 
-          const SizedBox(width: 12),
-        ],
-        if (soon > 0) ...[
-           _dot(AppColors.warning, "$soon"),
-           const SizedBox(width: 12),
-        ],
-        _dot(AppColors.fresh, "$fresh"),
-      ],
-    );
-  }
-
-  Widget _dot(Color color, String count) {
-    return Row(
-      children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 4),
-        Text(count, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-
-  Widget _buildCircularProgress(double value) {
-    return SizedBox(
-      width: 80, height: 80,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          CircularProgressIndicator(
-            value: value, 
-            strokeWidth: 8, 
-            backgroundColor: Colors.white10, 
-            color: AppColors.primary, 
-            strokeCap: StrokeCap.round
-          ),
-          Text("${(value * 100).toInt()}%", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExpiringHorizontalList(List<Product> urgentProducts) {
-    if (urgentProducts.isEmpty) {
+  Widget _buildExpiringHorizontalList(List<Product> products, ThemeData theme, bool isDark) {
+    if (products.isEmpty) {
       return Container(
-        height: 100,
-        alignment: Alignment.center,
+        padding: const EdgeInsets.all(24),
+        width: double.infinity,
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.shadow),
+          color: isDark ? const Color(0xFF2C2C2E).withValues(alpha: 0.5) : theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.05)),
         ),
-        child: const Text("Всё свежее! 😊", style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+        child: Column(
+          children: [
+            const Text("🎉", style: TextStyle(fontSize: 32)),
+            const SizedBox(height: 8),
+            Text(
+              "Всё свежее! Ничего не пропадает.",
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       );
     }
 
     return SizedBox(
-      height: 180,
+      height: 170,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        itemCount: urgentProducts.length,
+        itemCount: products.length,
         itemBuilder: (context, index) {
-          final product = urgentProducts[index];
-          final color = product.freshnessStatus == FreshnessStatus.urgent ? AppColors.accent : AppColors.warning;
+          final product = products[index];
+          final color = product.freshnessStatus == FreshnessStatus.urgent ? AppColors.primary : AppColors.warning;
 
           return Container(
             width: 140,
             margin: const EdgeInsets.only(right: 16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
               borderRadius: BorderRadius.circular(28),
-              boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 20, offset: const Offset(0, 10))],
+              boxShadow: [
+                BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04), blurRadius: 15, offset: const Offset(0, 8))
+              ],
             ),
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                 Text(product.emoji, style: const TextStyle(fontSize: 40)),
+                Hero(
+                  tag: 'product_${product.id}',
+                  child: Text(product.emoji, style: const TextStyle(fontSize: 40))
+                ),
                 const Spacer(),
-                 Text(product.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: -0.5, color: AppColors.textPrimary)),
+                Text(
+                  product.name, 
+                  maxLines: 1, 
+                  overflow: TextOverflow.ellipsis, 
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: -0.5)
+                ),
                 const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                   child: Text(
-                     product.daysLeft <= 0 ? "Срочно" : "Осталось: ${product.daysLeft} д.",
-                     style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)
+                     product.daysLeft <= 0 ? "Срочно" : "${product.daysLeft} дн. осталось",
+                     style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w800)
                    ),
                 ),
               ],
@@ -305,31 +443,62 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildScanAction(BuildContext context) {
+  Widget _buildScanAction(BuildContext context, ThemeData theme, bool isDark) {
     return Container(
-      height: 80,
+      height: 90,
       decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 10))],
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: isDark ? 0.4 : 0.2), 
+            blurRadius: 25, 
+            offset: const Offset(0, 10),
+          )
+        ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            context.navigateTo(const ScannerRoute());
-          },
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              children: const [
-                Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 28),
-                SizedBox(width: 16),
-                Text("Добавить чек", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                Spacer(),
-                Icon(Icons.chevron_right_rounded, color: Colors.white54),
-              ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Material(
+          child: Ink(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.primary, Color(0xFFFF6B6B)],
+              ),
+            ),
+            child: InkWell(
+              onTap: () => context.navigateTo(const ScannerRoute()),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          "Сканер чеков", 
+                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)
+                        ),
+                        Text(
+                          "Добавь продукты за секунду", 
+                          style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500)
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -337,48 +506,73 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildAIRecipeCard(BuildContext context) {
+  Widget _buildAIRecipeCard(BuildContext context, ThemeData theme, bool isDark) {
     return GestureDetector(
       onTap: () => context.navigateTo(const RecipesRoute()),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
           borderRadius: BorderRadius.circular(32),
-          boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 20, offset: const Offset(0, 10))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05), blurRadius: 20, offset: const Offset(0, 10))],
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
             Container(
-              height: 140,
+              height: 160,
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
+                  begin: Alignment.bottomLeft,
+                  end: Alignment.topRight,
                   colors: [
-                    AppColors.primary.withValues(alpha: 0.1),
+                    AppColors.accent.withValues(alpha: 0.15),
                     AppColors.primary.withValues(alpha: 0.05),
                   ],
                 ),
               ),
-              child: const Center(
-                child: Text("🍽️", style: TextStyle(fontSize: 60)),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Text("🥘", style: TextStyle(fontSize: 70)),
+                  Positioned(
+                    top: 16, right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        "AI ПОДБОР",
+                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Рецепты из вашего холодильника", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                        Text(
+                          "Кулинарные идеи", 
+                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)
+                        ),
                         const SizedBox(height: 4),
-                        Text("Подобраны по вашим продуктам", style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                        Text(
+                          "Что можно приготовить из продуктов,\nкоторые уже есть в наличии?", 
+                          style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 13, height: 1.4)
+                        ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.textPrimary),
+                  const Icon(Icons.chevron_right_rounded, size: 24, color: AppColors.primary),
                 ],
               ),
             ),
@@ -388,32 +582,48 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Widget _miniStatCard(String val, String label, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppColors.shadow)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(val, style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
-          ],
+  Widget _buildAvatar(WidgetRef ref, ThemeData theme) {
+    final profileAsync = ref.watch(userProfileProvider);
+    return profileAsync.when(
+      data: (profile) => Container(
+        width: 38, height: 38,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
+          image: profile.avatarUrl != null 
+            ? DecorationImage(image: NetworkImage(profile.avatarUrl!), fit: BoxFit.cover)
+            : null,
         ),
+        child: profile.avatarUrl == null 
+          ? const Icon(Icons.person_rounded, size: 20, color: AppColors.primary)
+          : null,
       ),
+      loading: () => const SizedBox(width: 38, height: 38, child: CircularProgressIndicator(strokeWidth: 2)),
+      error: (_, __) => const Icon(Icons.error_outline),
     );
   }
 
-  Widget _buildSectionHeader({required String title, VoidCallback? onTap}) {
+  Widget _buildSectionHeader(BuildContext context, {required String title, VoidCallback? onTap}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: AppColors.textPrimary)),
+        Text(
+          title, 
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+          )
+        ),
         if (onTap != null)
            TextButton(
             onPressed: onTap, 
-            child: const Text("См. все", style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold))
+            child: Row(
+              children: const [
+                Text("Все", style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800)),
+                Icon(Icons.chevron_right_rounded, color: AppColors.primary, size: 20),
+              ],
+            )
           ),
       ],
     );
