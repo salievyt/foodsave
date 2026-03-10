@@ -12,9 +12,10 @@ final filteredFridgeProvider = Provider<List<Product>>((ref) {
   final category = ref.watch(fridgeCategoryProvider);
   
   return products.where((p) {
+    final isActive = !p.isEaten && !p.isSpoiled;
     final matchesSearch = search.isEmpty || p.name.toLowerCase().contains(search.toLowerCase());
     final matchesCategory = category == 'Все' || p.category == category;
-    return matchesSearch && matchesCategory;
+    return isActive && matchesSearch && matchesCategory;
   }).toList();
 });
 

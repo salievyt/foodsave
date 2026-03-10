@@ -4,6 +4,7 @@ abstract class AuthRepository extends BaseRepository {
   Future<Map<String, dynamic>> login(String email, String password);
   Future<void> logout();
   Future<void> register(String username, String email, String password);
+  Future<Map<String, dynamic>> registerAndLogin(String username, String email, String password);
 }
 
 class AuthRepositoryImpl extends AuthRepository {
@@ -21,5 +22,11 @@ class AuthRepositoryImpl extends AuthRepository {
   @override
   Future<void> register(String username, String email, String password) async {
     await api.register(username, email, password);
+  }
+
+  @override
+  Future<Map<String, dynamic>> registerAndLogin(String username, String email, String password) async {
+    final response = await api.register(username, email, password);
+    return response.data;
   }
 }

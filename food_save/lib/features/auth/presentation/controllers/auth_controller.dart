@@ -65,6 +65,22 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  Future<void> loginAsGuest() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await ref.read(authViewModelProvider.notifier).loginAsGuest();
+      final vmState = ref.read(authViewModelProvider);
+      state = state.copyWith(
+        data: vmState.data,
+        isAuthenticated: vmState.data,
+        isLoading: false,
+        error: vmState.error?.toString(),
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
   Future<void> logout() async {
     await ref.read(authViewModelProvider.notifier).logout();
     state = AuthState();

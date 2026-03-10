@@ -2,13 +2,20 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/core/router/app_router.gr.dart';
 import 'package:food_save/core/services/persistence_helper.dart';
+import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/core/widgets/base_page.dart';
 import 'package:food_save/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:food_save/features/profile/presentation/viewmodels/profile_view_model.dart';
 import 'package:food_save/main.dart';
+
+import '../widgets/profile_guest_badge.dart';
+import '../widgets/profile_header.dart';
+import '../widgets/profile_logout_button.dart';
+import '../widgets/profile_section.dart';
+import '../widgets/profile_theme_toggle.dart';
+import '../widgets/profile_tile.dart';
 
 @RoutePage()
 class ProfilePage extends ConsumerWidget {
@@ -77,19 +84,12 @@ class _ProfilePageContent extends BasePage {
     return AppBar(
       backgroundColor: theme.scaffoldBackgroundColor,
       elevation: 0,
-      
-      flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        centerTitle: false,
-        title: Text(
-          "Профиль",
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w800,
-            fontSize: 22,
-            letterSpacing: -0.5,
-          ),
-        ),
+      title: const Text("Профиль"),
+      centerTitle: false,
+      titleTextStyle: TextStyle(
+        color: theme.colorScheme.onSurface,
+        fontWeight: FontWeight.w800,
+        fontSize: 22,
       ),
     );
   }
@@ -99,303 +99,138 @@ class _ProfilePageContent extends BasePage {
     final profileState = ref.watch(userProfileProvider);
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Column(
-              children: [
-                if (profileState.isLoading && profileState.data == null)
-                  const Center(child: CircularProgressIndicator())
-                else if (profileState.error != null && profileState.data == null)
-                  _buildProfileHeader(context, ref, UserProfile(username: "Ошибка", dietaryPreferences: "", allergies: "", email: "Ошибка загрузки"))
-                else if (profileState.data != null)
-                  _buildProfileHeader(context, ref, profileState.data!)
-                else
-                  const SizedBox.shrink(),
+    if (profileState.isLoading && profileState.data == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-                const SizedBox(height: 32),
+    final profile = profileState.data ??
+        UserProfile(username: "", dietaryPreferences: "", allergies: "", email: "");
 
-                _buildSectionTitle("Настройки питания"),
-                _buildMenuItem(
-                  ref, 
-                  Icons.restaurant_menu_rounded, 
-                  "Пищевые предпочтения", 
-                  onTap: () => _showSelectionDialog(
-                    context, ref, "Предпочтения", 
-                    ["Вегетарианец", "Палео", "Кето", "Без ограничений"],
-                    true
-                  )
-                ),
-                _buildMenuItem(
-                  ref, 
-                  Icons.medication_liquid_rounded, 
-                  "Аллергии", 
-                  onTap: () => _showSelectionDialog(
-                    context, ref, "Аллергии", 
-                    ["Лактоза", "Глютен", "Орехи", "Морепродукты"],
-                    false
-                  )
-                ),
-                
-                const SizedBox(height: 24),
-                _buildSectionTitle("Приложение"),
-
-                Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, 4))
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: AppColors.textPrimary, size: 20),
-                        ),
-                        const SizedBox(width: 16),
-                        const Expanded(
-                          child: Text(
-                            "Тёмная тема",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        Switch.adaptive(
-                          value: isDark,
-                          onChanged: (_) => ref.read(themeModeProvider.notifier).toggle(),
-                          activeTrackColor: AppColors.primary,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                _buildMenuItem(ref, Icons.bar_chart_rounded, "Статистика", onTap: () {
-                  context.router.push(const StatisticsRoute());
-                }),
-                _buildMenuItem(ref, Icons.chat_rounded, "Чат поддержки", onTap: () {
-                  context.router.push(const SupportChatRoute());
-                }),
-
-                const SizedBox(height: 24),
-                _buildSectionTitle("Аккаунт"),
-                
-                const SizedBox(height: 8),
-                
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () async {
-                      await PersistenceHelper.clearAuthTokens();
-                      if (context.mounted) {
-                        context.router.replaceAll([const LoginRoute()]);
-                      }
-                    },
-                    child: const Text(
-                      "Выйти из аккаунта",
-                      style: TextStyle(
-                        color: AppColors.accent,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 120),
-              ],
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      children: [
+        FutureBuilder<bool>(
+          future: PersistenceHelper.isGuest(),
+          builder: (context, snapshot) {
+            final isGuest = snapshot.data ?? false;
+            return ProfileHeader(
+              profile: profile,
+              badge: isGuest ? const ProfileGuestBadge(label: "Гостевой аккаунт") : null,
+              onAvatarTap: () => _pickAvatar(ref),
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+        ProfileSection(
+          title: "Питание",
+          children: [
+            ProfileTile(
+              icon: Icons.restaurant_menu_rounded,
+              title: "Предпочтения",
+              subtitle: profile.dietaryPreferences.isEmpty
+                  ? "Не указано"
+                  : profile.dietaryPreferences,
+              onTap: () => _showSelectionDialog(
+                context,
+                ref,
+                "Предпочтения",
+                ["Вегетарианец", "Палео", "Кето", "Без ограничений"],
+                true,
+              ),
             ),
-          ),
-        )
+            const SizedBox(height: 10),
+            ProfileTile(
+              icon: Icons.medication_liquid_rounded,
+              title: "Аллергии",
+              subtitle: profile.allergies.isEmpty ? "Не указано" : profile.allergies,
+              onTap: () => _showSelectionDialog(
+                context,
+                ref,
+                "Аллергии",
+                ["Лактоза", "Глютен", "Орехи", "Морепродукты"],
+                false,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        ProfileSection(
+          title: "Приложение",
+          children: [
+            ProfileThemeToggle(isDark: isDark, onToggle: () => ref.read(themeModeProvider.notifier).toggle()),
+            const SizedBox(height: 10),
+            ProfileTile(
+              icon: Icons.bar_chart_rounded,
+              title: "Статистика",
+              onTap: () => context.router.push(const StatisticsRoute()),
+            ),
+            const SizedBox(height: 10),
+            ProfileTile(
+              icon: Icons.chat_rounded,
+              title: "Чат поддержки",
+              onTap: () => context.router.push(const SupportChatRoute()),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        ProfileSection(
+          title: "Аккаунт",
+          children: [
+            ProfileTile(
+              icon: Icons.edit_outlined,
+              title: "Редактировать профиль",
+              onTap: () => _showEditInfoDialog(context, ref, profile),
+            ),
+            const SizedBox(height: 10),
+            ProfileLogoutButton(
+              onPressed: () async {
+                await PersistenceHelper.clearAuthTokens();
+                if (context.mounted) {
+                  context.router.replaceAll([const LoginRoute()]);
+                }
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
       ],
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, WidgetRef ref, UserProfile profile) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(color: AppColors.shadow, blurRadius: 20, offset: const Offset(0, 8))
-        ],
-      ),
-      child: Row(
-        children: [
-          Stack(
-            children: [
-              GestureDetector(
-                onTap: () => _pickAvatar(ref),
-                child: Container(
-                  width: 80, height: 80,
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary, width: 2),
-                    image: profile.avatarUrl != null 
-                      ? DecorationImage(
-                          image: NetworkImage(profile.avatarUrl!), 
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                  ),
-                  child: profile.avatarUrl == null 
-                    ? const Icon(Icons.person_rounded, size: 40, color: AppColors.primary)
-                    : null,
-                ),
-              ),
-              Positioned(
-                bottom: 0, right: 0,
-                child: GestureDetector(
-                  onTap: () => _pickAvatar(ref),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                    child: const Icon(Icons.edit_rounded, size: 14, color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        profile.username,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.textSecondary),
-                      onPressed: () => _showEditInfoDialog(context, ref, profile),
-                    ),
-                  ],
-                ),
-                Text(
-                  profile.email ?? "Email не указан",
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSelectionDialog(BuildContext context, WidgetRef ref, String title, List<String> options, bool isPrefs) {
+  void _showSelectionDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+    List<String> options,
+    bool isPreferences,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(title),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: options.map((opt) => ListTile(
-            title: Text(opt),
-            onTap: () {
-              if (isPrefs) {
-                ref.read(userProfileProvider.notifier).updatePreferences(opt);
-              } else {
-                ref.read(userProfileProvider.notifier).updateAllergies(opt);
-              }
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Настройка "$opt" обновлена на сервере!')));
-            },
-          )).toList(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 8),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title.toUpperCase(),
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: options
+                .map(
+                  (o) => ListTile(
+                    title: Text(o),
+                    onTap: () async {
+                      if (isPreferences) {
+                        await ref.read(userProfileProvider.notifier).updatePreferences(o);
+                      } else {
+                        await ref.read(userProfileProvider.notifier).updateAllergies(o);
+                      }
+                      if (context.mounted) Navigator.pop(context);
+                    },
+                  ),
+                )
+                .toList(),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildMenuItem(WidgetRef ref, IconData icon, String title, {VoidCallback? onTap}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, 4))
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Закрыть")),
         ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap ?? () {},
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: AppColors.textPrimary, size: 20),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary.withValues(alpha: 0.5)),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

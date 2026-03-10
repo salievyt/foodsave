@@ -45,8 +45,9 @@ class ProfileViewModel extends BaseViewModel<UserProfile?> {
   @override
   BaseState<UserProfile?> build() {
     _repository = ref.watch(profileRepositoryProvider);
-    fetchProfile();
-    return super.build();
+    final initial = super.build();
+    Future.microtask(fetchProfile);
+    return initial;
   }
 
   Future<void> fetchProfile() async {

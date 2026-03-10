@@ -18,6 +18,16 @@ class ApiService {
       receiveTimeout: const Duration(seconds: 10),
     ));
 
+    _dio.interceptors.add(LogInterceptor(
+      request: true,
+      requestHeader: true,
+      requestBody: true,
+      responseHeader: false,
+      responseBody: true,
+      error: true,
+      logPrint: (obj) => print(obj),
+    ));
+
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         final token = await PersistenceHelper.getAccessToken();

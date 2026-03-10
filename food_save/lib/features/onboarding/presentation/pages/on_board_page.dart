@@ -102,7 +102,12 @@ class _OnBoardPageContent extends BasePage {
                     duration: const Duration(milliseconds: 300),
                     opacity: isLastPage ? 0.0 : 1.0,
                     child: TextButton(
-                      onPressed: isLastPage ? null : () => context.pushRoute(const LoginRoute()),
+                      onPressed: isLastPage ? null : () async {
+                        await PersistenceHelper.setOnboardingSeen();
+                        if (context.mounted) {
+                          context.router.replace(const LoginRoute());
+                        }
+                      },
                       style: TextButton.styleFrom(
                         foregroundColor: AppColors.textSecondary,
                       ),

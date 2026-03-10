@@ -88,7 +88,7 @@ class _RecipesPageContent extends BasePage {
                 if (ingredientsToUse.isNotEmpty) ...[
                   const Text(
                     "Срочно использовать:",
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 8),
                   Wrap(

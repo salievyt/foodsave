@@ -14,6 +14,7 @@ class ProductListItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final fridgeNotifier = ref.read(fridgeControllerProvider.notifier);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Dismissible(
@@ -31,14 +32,13 @@ class ProductListItem extends ConsumerWidget {
           alignment: Alignment.centerRight,
           label: "Съедено",
         ),
-        confirmDismiss: (direction) async {
+        confirmDismiss: (_) async => true,
+        onDismissed: (direction) {
           final isSpoiled = direction == DismissDirection.startToEnd;
           if (isSpoiled) {
-            ref
-                .read(fridgeControllerProvider.notifier)
-                .markAsSpoiled(product.id);
+            fridgeNotifier.markAsSpoiled(product.id);
           } else {
-            ref.read(fridgeControllerProvider.notifier).markAsEaten(product.id);
+            fridgeNotifier.markAsEaten(product.id);
           }
 
           final actionText = isSpoiled ? 'выброшен' : 'съеден';
@@ -50,20 +50,17 @@ class ProductListItem extends ConsumerWidget {
               duration: const Duration(seconds: 4),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               action: SnackBarAction(
                 label: 'ОТМЕНИТЬ',
                 textColor: Colors.white,
                 onPressed: () {
-                  ref
-                      .read(fridgeControllerProvider.notifier)
-                      .restoreProduct(product);
+                  fridgeNotifier.restoreProduct(product);
                 },
               ),
             ),
           );
-
-          return true;
         },
         child: _buildProductCard(context),
       ),

@@ -11,6 +11,10 @@ import 'package:intl/intl.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:food_save/core/router/app_router.gr.dart';
 
+import '../widgets/support_message_bubble.dart';
+import '../widgets/support_input_bar.dart';
+import '../widgets/support_empty_state.dart';
+
 @RoutePage()
 class SupportChatPage extends ConsumerStatefulWidget {
   const SupportChatPage({super.key});
@@ -57,7 +61,7 @@ class _SupportChatPageState extends ConsumerState<SupportChatPage> {
       final wsBase = dotenv.env['WS_BASE_URL'] ?? 'ws://127.0.0.1:8000';
       final url = '$wsBase/ws/support_chat/?token=$token';
       _channel = WebSocketChannel.connect(Uri.parse(url));
-      
+
       _channel!.stream.listen((message) {
         final decodedMessage = jsonDecode(message);
         final text = decodedMessage['message'];
@@ -105,7 +109,7 @@ class _SupportChatPageState extends ConsumerState<SupportChatPage> {
 
     if (_channel != null) {
       _channel!.sink.add(jsonEncode({'message': text}));
-      
+
       ref.read(supportChatControllerProvider.notifier).addMessage({
         'isUser': true,
         'text': text,
@@ -145,20 +149,20 @@ class _SupportChatPageContent extends BasePage {
 
   @override
   PreferredSizeWidget? buildAppBar(BuildContext context) {
+    final theme = Theme.of(context);
     return AppBar(
-      title: const Text('Тех. Поддержка'),
-      backgroundColor: AppColors.primary,
+      title: const Text('Поддержка'),
+      backgroundColor: Colors.transparent,
       elevation: 0,
-      centerTitle: true,
-      titleTextStyle: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-      iconTheme: const IconThemeData(color: Colors.white),
+      centerTitle: false,
+      titleTextStyle: TextStyle(color: theme.colorScheme.onSurface, fontSize: 20, fontWeight: FontWeight.w800),
+      iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
     );
   }
 
   @override
   Widget buildBody(BuildContext context) {
     final chatState = ref.watch(supportChatControllerProvider);
-    final theme = Theme.of(context);
 
     if (chatState.isLoading) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primary));
@@ -193,103 +197,29 @@ class _SupportChatPageContent extends BasePage {
     return Column(
       children: [
         Expanded(
-          child: ListView.builder(
-            controller: scrollController,
-            padding: const EdgeInsets.all(16),
-            itemCount: chatState.data.length,
-            itemBuilder: (context, index) {
-              final message = chatState.data[index];
-              final isUser = message['isUser'] as bool;
-
-              return Align(
-                alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(12),
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.75,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isUser ? AppColors.primary : theme.cardColor,
-                    borderRadius: BorderRadius.circular(16).copyWith(
-                      bottomRight: isUser ? const Radius.circular(0) : const Radius.circular(16),
-                      bottomLeft: isUser ? const Radius.circular(16) : const Radius.circular(0),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        offset: const Offset(0, 2),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        message['text'] as String,
-                        style: TextStyle(
-                          color: isUser ? Colors.white : theme.colorScheme.onSurface,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        message['time'] as String,
-                        style: TextStyle(
-                          color: isUser ? Colors.white70 : theme.colorScheme.onSurface.withOpacity(0.5),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
+          child: chatState.data.isEmpty
+              ? const SupportEmptyState(
+                  title: "Напишите в поддержку",
+                  subtitle: "Мы отвечаем в рабочее время",
+                )
+              : ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: chatState.data.length,
+                  itemBuilder: (context, index) {
+                    final message = chatState.data[index];
+                    final isUser = message['isUser'] as bool;
+                    return SupportMessageBubble(
+                      text: message['text'] as String,
+                      time: message['time'] as String,
+                      isUser: isUser,
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
-        Container(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 16),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: messageController,
-                  style: TextStyle(color: theme.colorScheme.onSurface),
-                  decoration: InputDecoration(
-                    hintText: 'Введите сообщение...',
-                    hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4)),
-                    filled: true,
-                    fillColor: theme.scaffoldBackgroundColor,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                  onSubmitted: (_) => onSendMessage(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: onSendMessage,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.send_rounded, color: Colors.white),
-                ),
-              ),
-            ],
-          ),
+        SupportInputBar(
+          controller: messageController,
+          onSend: onSendMessage,
         ),
       ],
     );
