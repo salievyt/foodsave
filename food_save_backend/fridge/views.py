@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db import transaction
 from .models import Category, Product
 from .serializers import CategorySerializer, ProductSerializer
 import datetime
@@ -33,30 +34,63 @@ class ProductViewSet(viewsets.ModelViewSet):
         # scanning works flawlessly.
         
         today = datetime.date.today()
-        
+
+        # Mock OCR output. We persist the scanned items to the user's fridge.
         scanned_items = [
             {
                 "name": "Молоко 'Домик в деревне' 3.2%",
                 "quantity": 1,
                 "unit": "L",
-                "expiration_days_estimated": 7
+                "expiration_days_estimated": 7,
+                "category": "Молочка",
             },
             {
                 "name": "Яблоки Голден",
                 "quantity": 1.5,
                 "unit": "KG",
-                "expiration_days_estimated": 14
+                "expiration_days_estimated": 14,
+                "category": "Фрукты",
             },
             {
                 "name": "Сосиски Молочные",
                 "quantity": 0.5,
                 "unit": "KG",
-                "expiration_days_estimated": 5
+                "expiration_days_estimated": 5,
+                "category": "Мясо",
             }
         ]
+
+        created_items = []
+        with transaction.atomic():
+            for item in scanned_items:
+                category_name = item.get("category") or "Другое"
+                category, _ = Category.objects.get_or_create(
+                    name=category_name,
+                    defaults={"icon_name": None},
+                )
+                expiration_date = today + datetime.timedelta(
+                    days=int(item.get("expiration_days_estimated", 7))
+                )
+                product = Product.objects.create(
+                    user=request.user,
+                    category=category,
+                    name=item["name"],
+                    quantity=item.get("quantity", 1),
+                    unit=item.get("unit", Product.UnitChoices.PIECES),
+                    expiration_date=expiration_date,
+                    status=Product.StatusChoices.ACTIVE,
+                )
+                created_items.append({
+                    "id": product.id,
+                    "name": product.name,
+                    "quantity": product.quantity,
+                    "unit": product.unit,
+                    "expiration_date": product.expiration_date,
+                    "category": category.name,
+                })
 
         return Response({
             "status": "success",
             "message": "Чек успешно отсканирован",
-            "items": scanned_items
+            "items": created_items,
         }, status=status.HTTP_200_OK)

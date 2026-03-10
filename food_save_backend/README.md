@@ -45,6 +45,20 @@ food_save_backend/
 4.  Сделайте миграции: `python manage.py makemigrations` и `python manage.py migrate`
 5.  Запустите сервер: `python manage.py runserver 0.0.0.0:8000`
 
+## 🧪 Тестовые данные (fixtures)
+
+Для заполнения базовыми категориями и рецептами:
+
+```bash
+python manage.py loaddata fixtures/seed.json
+```
+
+Создание тестового пользователя:
+
+```bash
+python manage.py seed_demo
+```
+
 ---
 
 **Сервер готов принимать запросы от Flutter клиента. 🚀🥓**

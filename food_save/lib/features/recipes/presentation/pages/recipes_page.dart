@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:food_save/core/theme/app_colors.dart';
+import 'package:food_save/core/widgets/base_page.dart';
 import 'package:food_save/features/fridge/domain/models/product.dart';
 import 'package:food_save/features/fridge/presentation/controllers/fridge_controller.dart';
-import 'package:food_save/features/recipes/presentation/controllers/recipes_controller.dart';
+import 'package:food_save/features/recipes/presentation/viewmodels/recipes_view_model.dart';
 import 'package:food_save/core/router/app_router.gr.dart';
 
 @RoutePage()
@@ -15,7 +16,28 @@ class RecipesPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return _RecipesPageContent(ref: ref);
+  }
+}
+
+class _RecipesPageContent extends BasePage {
+  final WidgetRef ref;
+  const _RecipesPageContent({required this.ref});
+
+  @override
+  PreferredSizeWidget? buildAppBar(BuildContext context) {
+    final theme = Theme.of(context);
+    return AppBar(
+      toolbarHeight: 0,
+      elevation: 0,
+      backgroundColor: theme.scaffoldBackgroundColor,
+    );
+  }
+
+  @override
+  Widget buildBody(BuildContext context) {
     final products = ref.watch(fridgeControllerProvider);
+    final theme = Theme.of(context);
 
     // Ingredients that are urgent/soon
     final ingredientsToUse = products.where((p) {
@@ -23,123 +45,113 @@ class RecipesPage extends ConsumerWidget {
       return s == FreshnessStatus.urgent || s == FreshnessStatus.soon;
     }).toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Sticky header
-          SliverAppBar(
-            expandedHeight: 180,
-            collapsedHeight: 80,
-            floating: true,
-            pinned: true,
-            elevation: 0,
-            backgroundColor: AppColors.background.withValues(alpha: 0.8),
-            flexibleSpace: FlexibleSpaceBar(
-              background: _buildHeaderBackground(),
-              titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              title: const Text(
-                "Что приготовить?",
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20,
-                  letterSpacing: -0.5,
-                ),
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverAppBar(
+          expandedHeight: 180,
+          collapsedHeight: 80,
+          floating: true,
+          pinned: true,
+          elevation: 0,
+          backgroundColor: theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
+          flexibleSpace: FlexibleSpaceBar(
+            background: _buildHeaderBackground(),
+            titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            title: Text(
+              "Что приготовить?",
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w800,
+                fontSize: 20,
+                letterSpacing: -0.5,
               ),
             ),
           ),
+        ),
 
-          // Context / Subtitle
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Рецепты отсортированы по совпадению с продуктами в вашем холодильнике.",
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: AppColors.textSecondary,
-                      height: 1.4,
-                    ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Рецепты отсортированы по совпадению с продуктами в вашем холодильнике.",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
                   ),
-                  const SizedBox(height: 16),
-                  if (ingredientsToUse.isNotEmpty) ...[
-                    const Text(
-                      "Срочно использовать:",
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 16),
+                if (ingredientsToUse.isNotEmpty) ...[
+                  const Text(
+                    "Срочно использовать:",
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: ingredientsToUse.map((e) => _buildIngredientChip(e)).toList(),
+                  ),
+                ] else
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.fresh.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: ingredientsToUse.map((e) => _buildIngredientChip(e)).toList(),
-                    ),
-                  ] else
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.fresh.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.check_circle_rounded, color: AppColors.fresh),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              "Всё свежее! Нет срочных продуктов для спасения.",
-                              style: TextStyle(color: AppColors.fresh, fontWeight: FontWeight.w600),
-                            ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle_rounded, color: AppColors.fresh),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            "Всё свежее! Нет срочных продуктов для спасения.",
+                            style: TextStyle(color: AppColors.fresh, fontWeight: FontWeight.w600),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  const SizedBox(height: 12),
-                ],
-              ),
-            ),
-          ),
-
-          // Smart filtered recipes
-          ref.watch(filteredRecipesProvider).when(
-            data: (recipes) {
-              if (recipes.isEmpty) {
-                return const SliverToBoxAdapter(
-                  child: Center(child: Text("Рецептов пока нет 😢")),
-                );
-              }
-              return SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final recipe = recipes[index];
-                      return _buildRecipeCard(
-                        context,
-                        ref,
-                        recipe: recipe,
-                      );
-                    },
-                    childCount: recipes.length,
                   ),
-                ),
-              );
-            },
-            loading: () => const SliverToBoxAdapter(
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-            ),
-            error: (e, s) => SliverToBoxAdapter(
-              child: Center(child: Text("Ошибка загрузки: $e")),
+                const SizedBox(height: 12),
+              ],
             ),
           ),
+        ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
-        ],
-      ),
+        ref.watch(filteredRecipesProvider).when(
+          data: (recipes) {
+            if (recipes.isEmpty) {
+              return const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: Text("Рецептов пока нет 😢")),
+              );
+            }
+            return SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _buildRecipeCard(context, ref, recipe: recipes[index]),
+                  childCount: recipes.length,
+                ),
+              ),
+            );
+          },
+          loading: () => const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          ),
+          error: (e, s) => SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: Text("Ошибка загрузки: $e")),
+          ),
+        ),
+
+        const SliverToBoxAdapter(child: SizedBox(height: 120)),
+      ],
     );
   }
 
@@ -152,7 +164,7 @@ class RecipesPage extends ConsumerWidget {
             child: Container(color: Colors.transparent),
           ),
         ),
-        Positioned(
+        const Positioned(
           top: -30,
           right: -20,
           child: Opacity(
@@ -186,11 +198,7 @@ class RecipesPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecipeCard(
-    BuildContext context,
-    WidgetRef ref, {
-    required Recipe recipe,
-  }) {
+  Widget _buildRecipeCard(BuildContext context, WidgetRef ref, {required Recipe recipe}) {
     final isFav = ref.watch(favoriteRecipesProvider).any((r) => r.id == recipe.id);
     final matchColor = recipe.matchPercent >= 70
         ? AppColors.fresh
@@ -199,9 +207,7 @@ class RecipesPage extends ConsumerWidget {
             : AppColors.textSecondary;
 
     return GestureDetector(
-      onTap: () {
-        context.router.push(RecipeDetailRoute(recipe: recipe));
-      },
+      onTap: () => context.router.push(RecipeDetailRoute(recipe: recipe)),
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
@@ -215,18 +221,13 @@ class RecipesPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Emoji banner
             Container(
               height: 140,
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-              ),
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1)),
               child: Stack(
                 children: [
-                  Center(
-                    child: Text(recipe.emoji, style: const TextStyle(fontSize: 60)),
-                  ),
+                  Center(child: Text(recipe.emoji, style: const TextStyle(fontSize: 60))),
                   if (recipe.matchPercent > 0)
                     Positioned(
                       top: 12,
@@ -251,28 +252,19 @@ class RecipesPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Теги
                   Row(
                     children: [
                       _buildTag(Icons.timer_outlined, recipe.time ?? '30 мин'),
                       const SizedBox(width: 8),
                       _buildTag(Icons.bar_chart_rounded, recipe.difficulty ?? 'Средне'),
-                      const Spacer(),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // Название
                   Text(
                     recipe.title,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 8),
-                  // Ингредиенты
                   Text(
                     "Ингредиенты: ${recipe.ingredients.join(', ')}",
                     style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
@@ -280,14 +272,11 @@ class RecipesPage extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 16),
-                  // Actions
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            context.router.push(RecipeDetailRoute(recipe: recipe));
-                          },
+                          onPressed: () => context.router.push(RecipeDetailRoute(recipe: recipe)),
                           icon: const Icon(Icons.menu_book_rounded, size: 18),
                           label: const Text('Подробнее'),
                           style: OutlinedButton.styleFrom(
@@ -333,11 +322,7 @@ class RecipesPage extends ConsumerWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
         ),
       ],
     );

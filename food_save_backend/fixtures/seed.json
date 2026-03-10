@@ -1,0 +1,138 @@
+[
+  {
+    "model": "fridge.category",
+    "pk": 1,
+    "fields": {
+      "name": "Молочка",
+      "icon_name": null
+    }
+  },
+  {
+    "model": "fridge.category",
+    "pk": 2,
+    "fields": {
+      "name": "Фрукты",
+      "icon_name": null
+    }
+  },
+  {
+    "model": "fridge.category",
+    "pk": 3,
+    "fields": {
+      "name": "Мясо",
+      "icon_name": null
+    }
+  },
+  {
+    "model": "recipes.recipe",
+    "pk": 1,
+    "fields": {
+      "title": "Овсянка с яблоками",
+      "description": "Быстрый завтрак из простых ингредиентов.",
+      "image_url": "",
+      "prep_time_minutes": 5,
+      "cook_time_minutes": 10,
+      "calories": 320,
+      "dietary_tags": "Вегетарианское"
+    }
+  },
+  {
+    "model": "recipes.recipe",
+    "pk": 2,
+    "fields": {
+      "title": "Куриные сосиски с овощами",
+      "description": "Легкий ужин с минимальной готовкой.",
+      "image_url": "",
+      "prep_time_minutes": 10,
+      "cook_time_minutes": 15,
+      "calories": 420,
+      "dietary_tags": "Безглютеновое"
+    }
+  },
+  {
+    "model": "recipes.recipeingredient",
+    "pk": 1,
+    "fields": {
+      "recipe": 1,
+      "name": "Яблоки",
+      "amount": "1 шт",
+      "is_optional": false
+    }
+  },
+  {
+    "model": "recipes.recipeingredient",
+    "pk": 2,
+    "fields": {
+      "recipe": 1,
+      "name": "Овсяные хлопья",
+      "amount": "60 г",
+      "is_optional": false
+    }
+  },
+  {
+    "model": "recipes.recipeingredient",
+    "pk": 3,
+    "fields": {
+      "recipe": 1,
+      "name": "Молоко",
+      "amount": "200 мл",
+      "is_optional": true
+    }
+  },
+  {
+    "model": "recipes.recipeingredient",
+    "pk": 4,
+    "fields": {
+      "recipe": 2,
+      "name": "Сосиски",
+      "amount": "200 г",
+      "is_optional": false
+    }
+  },
+  {
+    "model": "recipes.recipeingredient",
+    "pk": 5,
+    "fields": {
+      "recipe": 2,
+      "name": "Овощи",
+      "amount": "150 г",
+      "is_optional": true
+    }
+  },
+  {
+    "model": "recipes.recipestep",
+    "pk": 1,
+    "fields": {
+      "recipe": 1,
+      "step_number": 1,
+      "instruction": "Нарежьте яблоко кубиками."
+    }
+  },
+  {
+    "model": "recipes.recipestep",
+    "pk": 2,
+    "fields": {
+      "recipe": 1,
+      "step_number": 2,
+      "instruction": "Сварите овсянку, добавьте яблоки и молоко."
+    }
+  },
+  {
+    "model": "recipes.recipestep",
+    "pk": 3,
+    "fields": {
+      "recipe": 2,
+      "step_number": 1,
+      "instruction": "Обжарьте сосиски до золотистой корочки."
+    }
+  },
+  {
+    "model": "recipes.recipestep",
+    "pk": 4,
+    "fields": {
+      "recipe": 2,
+      "step_number": 2,
+      "instruction": "Добавьте овощи и тушите 10 минут."
+    }
+  }
+]

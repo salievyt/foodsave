@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:food_save/core/services/persistence_helper.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -7,9 +8,8 @@ class ApiService {
 
   late Dio _dio;
   // Use 127.0.0.1 for iOS Simulator, 10.0.2.2 for Android Emulator
-  // For production, change this to your server IP
-  final String _baseUrl = 'http://193.160.209.227:8003/api';
-  // final String _baseUrl = 'http://127.0.0.1:8000/api';
+  // For production, set API_BASE_URL in .env
+  final String _baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://127.0.0.1:8000/api';
 
   ApiService._internal() {
     _dio = Dio(BaseOptions(

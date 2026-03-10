@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/features/fridge/presentation/controllers/fridge_controller.dart';
-import 'package:food_save/features/recipes/presentation/controllers/recipes_controller.dart';
+import 'package:food_save/features/recipes/presentation/viewmodels/recipes_view_model.dart';
 
 @RoutePage()
 class RecipeDetailPage extends ConsumerStatefulWidget {

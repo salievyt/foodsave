@@ -35,7 +35,7 @@ import 'package:food_save/features/onboarding/presentation/pages/splash_screen.d
     as _i13;
 import 'package:food_save/features/profile/presentation/pages/profile_page.dart'
     as _i7;
-import 'package:food_save/features/recipes/presentation/controllers/recipes_controller.dart'
+import 'package:food_save/features/recipes/presentation/viewmodels/recipes_view_model.dart'
     as _i19;
 import 'package:food_save/features/recipes/presentation/pages/recipe_detail_page.dart'
     as _i8;

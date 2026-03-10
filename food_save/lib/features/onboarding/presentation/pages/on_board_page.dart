@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:food_save/core/router/app_router.gr.dart';
 import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/core/services/persistence_helper.dart';
+import 'package:food_save/core/widgets/base_page.dart';
 import 'onboard_card.dart';
 import 'onboard_model.dart';
 
@@ -60,118 +61,137 @@ class _OnBoardPageState extends State<OnBoardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isLastPage = page == pages.length - 1;
+    return _OnBoardPageContent(
+      pages: pages,
+      currentPage: page,
+      controller: _controller,
+      onPageChanged: (i) => setState(() => page = i),
+    );
+  }
+}
+
+class _OnBoardPageContent extends BasePage {
+  final List<OnboardModel> pages;
+  final int currentPage;
+  final PageController controller;
+  final ValueChanged<int> onPageChanged;
+
+  const _OnBoardPageContent({
+    required this.pages,
+    required this.currentPage,
+    required this.controller,
+    required this.onPageChanged,
+  });
+
+  @override
+  Widget buildBody(BuildContext context) {
+    final bool isLastPage = currentPage == pages.length - 1;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: Column(
-            children: [
-              // Skip button
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    AnimatedOpacity(
-                      duration: const Duration(milliseconds: 300),
-                      opacity: isLastPage ? 0.0 : 1.0,
-                      child: TextButton(
-                        onPressed: isLastPage ? null : () => context.pushRoute(const LoginRoute()),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.textSecondary,
-                        ),
-                        child: const Text(
-                          "Пропустить",
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Skip button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 300),
+                    opacity: isLastPage ? 0.0 : 1.0,
+                    child: TextButton(
+                      onPressed: isLastPage ? null : () => context.pushRoute(const LoginRoute()),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.textSecondary,
+                      ),
+                      child: const Text(
+                        "Пропустить",
+                        style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
 
-              // PageView
-              Expanded(
-                child: PageView.builder(
-                  controller: _controller,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: pages.length,
-                  onPageChanged: (i) {
-                    setState(() => page = i);
-                  },
-                  itemBuilder: (_, i) {
-                    return OnboardCard(data: pages[i]);
-                  },
-                ),
+            // PageView
+            Expanded(
+              child: PageView.builder(
+                controller: controller,
+                physics: const BouncingScrollPhysics(),
+                itemCount: pages.length,
+                onPageChanged: onPageChanged,
+                itemBuilder: (_, i) {
+                  return OnboardCard(data: pages[i]);
+                },
               ),
+            ),
 
-              // Indicators & Button Controls
-              Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        pages.length,
-                        (index) => AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOutCubic,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: page == index ? 24 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: page == index ? AppColors.primary : AppColors.primary.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
+            // Indicators & Button Controls
+            Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      pages.length,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: currentPage == index ? 24 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: currentPage == index ? AppColors.primary : AppColors.primary.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () async {
+                        if (isLastPage) {
+                          await PersistenceHelper.setOnboardingSeen();
+                          if (context.mounted) context.router.replace(const LoginRoute());
+                        } else {
+                          controller.nextPage(
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeOutCubic,
+                          );
+                        }
+                      },
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: Text(
+                          isLastPage ? "Начать пользоваться" : "Дальше",
+                          key: ValueKey<bool>(isLastPage),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 48),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () async {
-                          if (isLastPage) {
-                            await PersistenceHelper.setOnboardingSeen();
-                            if (mounted) context.router.replace(const LoginRoute());
-                          } else {
-                            _controller.nextPage(
-                              duration: const Duration(milliseconds: 500),
-                              curve: Curves.easeOutCubic,
-                            );
-                          }
-                        },
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          child: Text(
-                            isLastPage ? "Начать пользоваться" : "Дальше",
-                            key: ValueKey<bool>(isLastPage),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

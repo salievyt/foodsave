@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:food_save/core/router/app_router.dart';
 import 'package:food_save/core/theme/app_theme.dart';
 import 'package:food_save/core/services/notification_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Theme mode provider — persists to SharedPreferences.
 final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
@@ -37,6 +38,7 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await NotificationService.init();
   runApp(
     const ProviderScope(

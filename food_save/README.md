@@ -44,9 +44,14 @@ lib/
 
 ## ⚡ Быстрый запуск
 
-1.  Установите зависимости: `flutter pub get`
-2.  Сгенерируйте код: `flutter pub run build_runner build --delete-conflicting-outputs`
-3.  Запустите: `flutter run`
+1.  Подготовьте env: `cp .env.example .env`
+2.  Установите зависимости: `flutter pub get`
+3.  Сгенерируйте код: `flutter pub run build_runner build --delete-conflicting-outputs`
+4.  Запустите: `flutter run`
+
+## ⚙️ Конфигурация окружения
+
+Фронтенд читает `API_BASE_URL` и `WS_BASE_URL` из файла `.env`.
 
 ---
 

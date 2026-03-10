@@ -2,12 +2,13 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:food_save/core/theme/app_colors.dart';
-import 'package:food_save/features/fridge/domain/models/product.dart';
+import 'package:food_save/core/widgets/base_page.dart';
 import 'package:food_save/features/fridge/presentation/controllers/fridge_controller.dart';
+import 'package:food_save/features/fridge/presentation/viewmodels/fridge_view_model.dart' hide filteredFridgeProvider;
 import 'package:food_save/features/fridge/presentation/widgets/add_product_sheet.dart';
 import 'package:food_save/core/router/app_router.gr.dart';
+import '../widgets/product_list_item.dart';
 
 @RoutePage()
 class FridgePage extends ConsumerWidget {
@@ -15,121 +16,109 @@ class FridgePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return _FridgePageContent(ref: ref);
+  }
+}
+
+class _FridgePageContent extends BasePage {
+  final WidgetRef ref;
+  const _FridgePageContent({required this.ref});
+
+  @override
+  PreferredSizeWidget? buildAppBar(BuildContext context) {
+    final theme = Theme.of(context);
+    return AppBar(
+      toolbarHeight: 0,
+      elevation: 0,
+      backgroundColor: theme.scaffoldBackgroundColor,
+    );
+  }
+
+  @override
+  Widget buildBody(BuildContext context) {
     final activeProducts = ref.watch(filteredFridgeProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Заголовок
-          SliverAppBar(
-            expandedHeight: 140,
-            collapsedHeight: 80,
-            floating: true,
-            pinned: true,
-            elevation: 0,
-            backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.8),
-            flexibleSpace: FlexibleSpaceBar(
-              background: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(color: Colors.transparent),
-              ),
-              titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              title: Text(
-                "Твой Холодильник",
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20,
-                  letterSpacing: -0.5,
-                ),
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverAppBar(
+          expandedHeight: 140,
+          collapsedHeight: 80,
+          floating: true,
+          pinned: true,
+          elevation: 0,
+          backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.8),
+          flexibleSpace: FlexibleSpaceBar(
+            background: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(color: Colors.transparent),
+            ),
+            titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            title: Text(
+              "Твой Холодильник",
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w800,
+                fontSize: 20,
+                letterSpacing: -0.5,
               ),
             ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: IconButton(
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => const AddProductSheet(),
-                    );
-                  },
-                  icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary, size: 30),
-                  tooltip: 'Добавить вручную',
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: IconButton(
-                  onPressed: () {
-                    context.navigateTo(const ScannerRoute());
-                  },
-                  icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.textSecondary, size: 26),
-                  tooltip: 'Сканировать чек',
-                ),
-              ),
-            ],
           ),
+          actions: [
+            IconButton(
+              onPressed: () => _showAddProduct(context),
+              icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary, size: 30),
+              tooltip: 'Добавить вручную',
+            ),
+            IconButton(
+              onPressed: () => context.navigateTo(const ScannerRoute()),
+              icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.textSecondary, size: 26),
+              tooltip: 'Сканировать чек',
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
 
-          // Поиск
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: _buildSearchBar(context, ref),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: _buildSearchBar(context, ref),
+          ),
+        ),
+
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _CategoryHeaderDelegate(ref),
+        ),
+
+        if (activeProducts.isEmpty)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: _EmptyFridgeView(),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.all(20),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => ProductListItem(product: activeProducts[index]),
+                childCount: activeProducts.length,
+              ),
             ),
           ),
 
-          // Категории
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _CategoryHeaderDelegate(ref),
-          ),
+        const SliverToBoxAdapter(child: SizedBox(height: 100)),
+      ],
+    );
+  }
 
-          // Список продуктов
-          activeProducts.isEmpty
-              ? SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(40),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          const Text("🧊", style: TextStyle(fontSize: 48)),
-                          const SizedBox(height: 12),
-                          Text(
-                            "Холодильник пока пуст",
-                            style: TextStyle(color: AppColors.textSecondary, fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Нажмите + чтобы добавить продукт",
-                            style: TextStyle(color: AppColors.textTertiary, fontSize: 14),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              : SliverPadding(
-                  padding: const EdgeInsets.all(20),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final product = activeProducts[index];
-                        return _buildDismissibleProductCard(context, ref, product);
-                      },
-                      childCount: activeProducts.length,
-                    ),
-                  ),
-                ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
-      ),
+  void _showAddProduct(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const AddProductSheet(),
     );
   }
 
@@ -140,7 +129,11 @@ class FridgePage extends ConsumerWidget {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
         ],
       ),
       child: TextField(
@@ -154,178 +147,30 @@ class FridgePage extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildDismissibleProductCard(BuildContext context, WidgetRef ref, Product product) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Dismissible(
-        key: Key(product.id),
-        behavior: HitTestBehavior.opaque,
-        // Свайп влево — Испорчено
-        background: _buildSwipeAction(
-          color: AppColors.accent,
-          icon: Icons.delete_outline_rounded,
-          alignment: Alignment.centerLeft,
-          label: "В корзину",
-        ),
-        // Свайп вправо — Использовано
-        secondaryBackground: _buildSwipeAction(
-          color: AppColors.fresh,
-          icon: Icons.check_circle_outline_rounded,
-          alignment: Alignment.centerRight,
-          label: "Съедено",
-        ),
-        confirmDismiss: (direction) async {
-          if (direction == DismissDirection.startToEnd) {
-            ref.read(fridgeControllerProvider.notifier).markAsSpoiled(product.id);
-          } else {
-            ref.read(fridgeControllerProvider.notifier).markAsEaten(product.id);
-          }
+class _EmptyFridgeView extends StatelessWidget {
+  const _EmptyFridgeView();
 
-          final actionText = direction == DismissDirection.startToEnd ? 'выброшен' : 'съеден';
-
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${product.name} $actionText'),
-              duration: const Duration(seconds: 4),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              action: SnackBarAction(
-                label: 'ОТМЕНИТЬ',
-                textColor: Colors.white,
-                onPressed: () {
-                  ref.read(fridgeControllerProvider.notifier).restoreProduct(product);
-                },
-              ),
-            ),
-          );
-
-          return true;
-        },
-        child: _buildProductCard(context, product),
-      ),
-    );
-  }
-
-  Widget _buildSwipeAction({required Color color, required IconData icon, required Alignment alignment, required String label}) {
-    return Container(
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(24)),
-      alignment: alignment,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white, size: 30),
-          Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductCard(BuildContext context, Product product) {
-    final theme = Theme.of(context);
-    final status = product.freshnessStatus;
-    final isUrgent = status == FreshnessStatus.urgent || status == FreshnessStatus.spoiled;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))
-        ],
-        border: isUrgent ? Border.all(color: AppColors.accent.withOpacity(0.3), width: 2) : Border.all(color: Colors.transparent, width: 2),
-      ),
-      child: Row(
-        children: [
-          // Emoji
-          Container(
-            width: 60, height: 60,
-            decoration: BoxDecoration(
-              color: theme.scaffoldBackgroundColor,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Center(child: Text(product.emoji, style: const TextStyle(fontSize: 30))),
+          Text("🧊", style: TextStyle(fontSize: 48)),
+          SizedBox(height: 12),
+          Text(
+            "Холодильник пока пуст",
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 16, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(width: 16),
-          // Инфо о продукте
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: theme.colorScheme.onSurface),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "${product.category} • Куплено ${product.purchaseDate.day}.${product.purchaseDate.month}",
-                  style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
-                ),
-                const SizedBox(height: 8),
-                _buildFreshnessIndicator(context, product),
-              ],
-            ),
+          SizedBox(height: 8),
+          Text(
+            "Нажмите + чтобы добавить продукт",
+            style: TextStyle(color: AppColors.textTertiary, fontSize: 14),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildFreshnessIndicator(BuildContext context, Product product) {
-    final theme = Theme.of(context);
-    Color statusColor;
-    String statusText;
-    double progress;
-
-    final days = product.daysLeft;
-
-    switch (product.freshnessStatus) {
-      case FreshnessStatus.spoiled:
-        statusColor = theme.colorScheme.onSurface.withOpacity(0.4);
-        statusText = "Испорчено";
-        progress = 0.0;
-        break;
-      case FreshnessStatus.urgent:
-        statusColor = AppColors.accent;
-        statusText = "Срочно!";
-        progress = 0.1;
-        break;
-      case FreshnessStatus.soon:
-        statusColor = AppColors.warning;
-        statusText = "Скоро";
-        progress = 0.4;
-        break;
-      case FreshnessStatus.fresh:
-        statusColor = AppColors.fresh;
-        statusText = "Свежее";
-        progress = 1.0;
-        break;
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(statusText, style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold)),
-            Text(product.freshnessStatus == FreshnessStatus.spoiled ? "Просрочено" : "Осталось дней: $days", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5), fontSize: 11)),
-          ],
-        ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 4,
-            backgroundColor: theme.scaffoldBackgroundColor,
-            valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -367,7 +212,12 @@ class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
           color: isSelected ? AppColors.primary : theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            if (isSelected) BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))
+            if (isSelected)
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
           ],
         ),
         alignment: Alignment.center,

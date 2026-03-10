@@ -1,81 +1,62 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:food_save/core/services/api_service.dart';
+import 'package:food_save/features/profile/presentation/viewmodels/profile_view_model.dart';
 
-class UserProfile {
-  final String username;
-  final String? email;
-  final String? avatarUrl;
-  final String dietaryPreferences;
-  final String allergies;
+class ProfileState {
+  final UserProfile? data;
+  final bool isLoading;
+  final Object? error;
 
-  UserProfile({
-    required this.username,
-    this.email,
-    this.avatarUrl,
-    required this.dietaryPreferences,
-    required this.allergies,
+  ProfileState({
+    this.data,
+    this.isLoading = false,
+    this.error,
   });
 
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
-    return UserProfile(
-      username: json['username'],
-      email: json['email'],
-      avatarUrl: json['avatar'],
-      dietaryPreferences: json['dietary_preferences'] ?? '',
-      allergies: json['allergies'] ?? '',
+  ProfileState copyWith({
+    UserProfile? data,
+    bool? isLoading,
+    Object? error,
+  }) {
+    return ProfileState(
+      data: data ?? this.data,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
     );
   }
 }
 
-final userProfileProvider = StateNotifierProvider<UserProfileNotifier, AsyncValue<UserProfile>>((ref) {
-  return UserProfileNotifier();
+final userProfileProvider = NotifierProvider<UserProfileController, ProfileState>(() {
+  return UserProfileController();
 });
 
-class UserProfileNotifier extends StateNotifier<AsyncValue<UserProfile>> {
-  UserProfileNotifier() : super(const AsyncValue.loading()) {
-    fetchProfile();
+class UserProfileController extends Notifier<ProfileState> {
+  @override
+  ProfileState build() {
+    final vmState = ref.watch(profileViewModelProvider);
+    return ProfileState(
+      data: vmState.data,
+      isLoading: vmState.isLoading,
+      error: vmState.error,
+    );
   }
 
-  final ApiService _api = ApiService();
-
   Future<void> fetchProfile() async {
-    try {
-      final response = await _api.getProfile();
-      if (response.statusCode == 200) {
-        state = AsyncValue.data(UserProfile.fromJson(response.data));
-      }
-    } catch (e, s) {
-      state = AsyncValue.error(e, s);
-    }
+    await ref.read(profileViewModelProvider.notifier).fetchProfile();
   }
 
   Future<void> updateProfileField(Map<String, dynamic> data) async {
-    try {
-      final response = await _api.updateProfile(data);
-      if (response.statusCode == 200) {
-        fetchProfile();
-      }
-    } catch (e) {
-      print("Update profile field error: $e");
-    }
+    await ref.read(profileViewModelProvider.notifier).updateProfileField(data);
   }
 
   Future<void> uploadAvatar(String path) async {
-    try {
-      final response = await _api.uploadAvatar(path);
-      if (response.statusCode == 200) {
-        fetchProfile();
-      }
-    } catch (e) {
-      print("Upload avatar error: $e");
-    }
+    await ref.read(profileViewModelProvider.notifier).uploadAvatar(path);
   }
 
   Future<void> updatePreferences(String prefs) async {
-    await updateProfileField({'dietary_preferences': prefs});
+    await ref.read(profileViewModelProvider.notifier).updatePreferences(prefs);
   }
 
   Future<void> updateAllergies(String allergies) async {
-    await updateProfileField({'allergies': allergies});
+    await ref.read(profileViewModelProvider.notifier).updateAllergies(allergies);
   }
 }

@@ -5,12 +5,24 @@ import 'package:image_picker/image_picker.dart';
 import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/core/router/app_router.gr.dart';
 import 'package:food_save/core/services/persistence_helper.dart';
+import 'package:food_save/core/widgets/base_page.dart';
 import 'package:food_save/features/profile/presentation/controllers/profile_controller.dart';
+import 'package:food_save/features/profile/presentation/viewmodels/profile_view_model.dart';
 import 'package:food_save/main.dart';
 
 @RoutePage()
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _ProfilePageContent(ref: ref);
+  }
+}
+
+class _ProfilePageContent extends BasePage {
+  final WidgetRef ref;
+  const _ProfilePageContent({required this.ref});
 
   Future<void> _pickAvatar(WidgetRef ref) async {
     final picker = ImagePicker();
@@ -60,157 +72,157 @@ class ProfilePage extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(userProfileProvider);
+  PreferredSizeWidget? buildAppBar(BuildContext context) {
+    final theme = Theme.of(context);
+    return AppBar(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      elevation: 0,
+      
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        centerTitle: false,
+        title: Text(
+          "Профиль",
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w800,
+            fontSize: 22,
+            letterSpacing: -0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget buildBody(BuildContext context) {
+    final profileState = ref.watch(userProfileProvider);
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 120,
-            floating: true,
-            backgroundColor: AppColors.background,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              centerTitle: false,
-              title: const Text(
-                "Твой Профиль",
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 22,
-                  letterSpacing: -0.5,
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Column(
+              children: [
+                if (profileState.isLoading && profileState.data == null)
+                  const Center(child: CircularProgressIndicator())
+                else if (profileState.error != null && profileState.data == null)
+                  _buildProfileHeader(context, ref, UserProfile(username: "Ошибка", dietaryPreferences: "", allergies: "", email: "Ошибка загрузки"))
+                else if (profileState.data != null)
+                  _buildProfileHeader(context, ref, profileState.data!)
+                else
+                  const SizedBox.shrink(),
+
+                const SizedBox(height: 32),
+
+                _buildSectionTitle("Настройки питания"),
+                _buildMenuItem(
+                  ref, 
+                  Icons.restaurant_menu_rounded, 
+                  "Пищевые предпочтения", 
+                  onTap: () => _showSelectionDialog(
+                    context, ref, "Предпочтения", 
+                    ["Вегетарианец", "Палео", "Кето", "Без ограничений"],
+                    true
+                  )
                 ),
-              ),
-            ),
-          ),
-          
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  // Profile Header
-                  profileAsync.when(
-                    data: (profile) => _buildProfileHeader(context, ref, profile),
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, s) => _buildProfileHeader(context, ref, UserProfile(username: "Ошибка", dietaryPreferences: "", allergies: "", email: "Ошибка загрузки")),
-                  ),
+                _buildMenuItem(
+                  ref, 
+                  Icons.medication_liquid_rounded, 
+                  "Аллергии", 
+                  onTap: () => _showSelectionDialog(
+                    context, ref, "Аллергии", 
+                    ["Лактоза", "Глютен", "Орехи", "Морепродукты"],
+                    false
+                  )
+                ),
+                
+                const SizedBox(height: 24),
+                _buildSectionTitle("Приложение"),
 
-                  const SizedBox(height: 32),
-
-                  // Working menu items only
-                  _buildSectionTitle("Настройки питания"),
-                  _buildMenuItem(
-                    ref, 
-                    Icons.restaurant_menu_rounded, 
-                    "Пищевые предпочтения", 
-                    onTap: () => _showSelectionDialog(
-                      context, ref, "Предпочтения", 
-                      ["Вегетарианец", "Палео", "Кето", "Без ограничений"],
-                      true
-                    )
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, 4))
+                    ],
                   ),
-                  _buildMenuItem(
-                    ref, 
-                    Icons.medication_liquid_rounded, 
-                    "Аллергии", 
-                    onTap: () => _showSelectionDialog(
-                      context, ref, "Аллергии", 
-                      ["Лактоза", "Глютен", "Орехи", "Морепродукты"],
-                      false
-                    )
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  _buildSectionTitle("Приложение"),
-
-                  // Dark theme toggle
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, 4))
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: AppColors.textPrimary, size: 20),
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Text(
+                            "Тёмная тема",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: isDark,
+                          onChanged: (_) => ref.read(themeModeProvider.notifier).toggle(),
+                          activeTrackColor: AppColors.primary,
+                        ),
                       ],
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: AppColors.textPrimary, size: 20),
-                          ),
-                          const SizedBox(width: 16),
-                          const Expanded(
-                            child: Text(
-                              "Тёмная тема",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                          Switch.adaptive(
-                            value: isDark,
-                            onChanged: (_) => ref.read(themeModeProvider.notifier).toggle(),
-                            activeTrackColor: AppColors.primary,
-                          ),
-                        ],
+                  ),
+                ),
+
+                _buildMenuItem(ref, Icons.bar_chart_rounded, "Статистика", onTap: () {
+                  context.router.push(const StatisticsRoute());
+                }),
+                _buildMenuItem(ref, Icons.chat_rounded, "Чат поддержки", onTap: () {
+                  context.router.push(const SupportChatRoute());
+                }),
+
+                const SizedBox(height: 24),
+                _buildSectionTitle("Аккаунт"),
+                
+                const SizedBox(height: 8),
+                
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () async {
+                      await PersistenceHelper.clearAuthTokens();
+                      if (context.mounted) {
+                        context.router.replaceAll([const LoginRoute()]);
+                      }
+                    },
+                    child: const Text(
+                      "Выйти из аккаунта",
+                      style: TextStyle(
+                        color: AppColors.accent,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-
-                  _buildMenuItem(ref, Icons.bar_chart_rounded, "Статистика", onTap: () {
-                    context.router.push(const StatisticsRoute());
-                  }),
-                  _buildMenuItem(ref, Icons.chat_rounded, "Чат поддержки", onTap: () {
-                    context.router.push(const SupportChatRoute());
-                  }),
-
-                  const SizedBox(height: 24),
-                  _buildSectionTitle("Аккаунт"),
-                  
-                  const SizedBox(height: 8),
-                  
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton(
-                      onPressed: () async {
-                        await PersistenceHelper.clearAuthTokens();
-                        if (context.mounted) {
-                          context.router.replaceAll([const LoginRoute()]);
-                        }
-                      },
-                      child: const Text(
-                        "Выйти из аккаунта",
-                        style: TextStyle(
-                          color: AppColors.accent,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 120),
-                ],
-              ),
+                ),
+                
+                const SizedBox(height: 120),
+              ],
             ),
-          )
-        ],
-      ),
+          ),
+        )
+      ],
     );
   }
 

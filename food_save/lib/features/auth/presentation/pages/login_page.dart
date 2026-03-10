@@ -1,152 +1,134 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:food_save/core/router/app_router.gr.dart';
-import 'package:food_save/core/services/api_service.dart';
-import 'package:food_save/core/services/persistence_helper.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:food_save/core/theme/app_colors.dart';
+import 'package:food_save/core/widgets/base_page.dart';
+import 'package:food_save/features/auth/presentation/controllers/auth_controller.dart';
 
 @RoutePage()
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-
-  final email = TextEditingController();
-  final password = TextEditingController();
-
-  static const accent = Color(0xFFE53935);
+class _LoginPageState extends ConsumerState<LoginPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    return _LoginPageContent(
+      ref: ref,
+      emailController: _emailController,
+      passwordController: _passwordController,
+    );
+  }
+}
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+class _LoginPageContent extends BasePage {
+  final WidgetRef ref;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
 
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  const _LoginPageContent({
+    required this.ref,
+    required this.emailController,
+    required this.passwordController,
+  });
 
-            children: [
+  @override
+  Widget buildBody(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+    final theme = Theme.of(context);
 
-              const SizedBox(height: 40),
-
-              const Text(
-                "Добро пожаловать",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              const Text(
-                "Войдите чтобы продолжить",
-                style: TextStyle(color: Colors.grey),
-              ),
-
-              const SizedBox(height: 40),
-
-              TextField(
-                controller: email, // Variable name remains for stability, but UI changes
-                decoration: InputDecoration(
-                  labelText: "Логин",
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              TextField(
-                controller: password,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: "Пароль",
-                  prefixIcon: const Icon(Icons.lock),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    context.pushRoute(const ResetPasswordRoute());
-                  },
-                  child: const Text("Забыли пароль?"),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                onPressed: () async {
-                  final api = ApiService();
-                  try {
-                    final response = await api.login(email.text, password.text);
-                    if (response.statusCode == 200) {
-                      final data = response.data;
-                      await PersistenceHelper.saveAuthTokens(data['access'], data['refresh']);
-                      
-                      // Success! Already logged in via backend.
-                      // Let's go to MainRoute directly or via CodeRoute but with real status
-                      if (mounted) {
-                        context.router.replaceAll([const MainRoute()]);
-                      }
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Ошибка входа. Проверьте данные.')),
-                      );
-                    }
-                  }
-                },
-                child: const Text("Войти", style: TextStyle(color: Colors.white),),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 40),
+            const Text(
+              "Добро пожаловать",
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "Войдите чтобы продолжить",
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 40),
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(
+                labelText: "Логин",
+                prefixIcon: const Icon(Icons.person_outline),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
               ),
             ),
-
-              const Spacer(),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-
-                  const Text("Нет аккаунта?"),
-
-                  TextButton(
-                    onPressed: () {
-                      context.pushRoute(const RegisterRoute());
-                    },
-                    child: const Text("Регистрация"),
-                  )
-                ],
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: "Пароль",
+                prefixIcon: const Icon(Icons.lock),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
               ),
-
-              const SizedBox(height: 20)
-            ],
-          ),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => context.pushRoute(const ResetPasswordRoute()),
+                child: const Text("Забыли пароль?"),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: authState.isLoading ? null : () async {
+                  await ref.read(authControllerProvider.notifier).login(
+                    emailController.text,
+                    passwordController.text,
+                  );
+                  
+                  final newState = ref.read(authControllerProvider);
+                  if (newState.data && context.mounted) {
+                    context.router.replaceAll([const MainRoute()]);
+                  } else if (newState.error != null && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Ошибка входа: ${newState.error}')),
+                    );
+                  }
+                },
+                child: authState.isLoading 
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text("Войти", style: TextStyle(color: Colors.white)),
+              ),
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text("Нет аккаунта?"),
+                TextButton(
+                  onPressed: () => context.pushRoute(const RegisterRoute()),
+                  child: const Text("Регистрация"),
+                )
+              ],
+            ),
+            const SizedBox(height: 20)
+          ],
         ),
       ),
     );
