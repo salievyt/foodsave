@@ -1,0 +1,73 @@
+[
+{
+  "model": "sessions.session",
+  "pk": "bqmnq6iqo7qkc95omjrnbupw8d3rsmal",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGlnZ-E9JnzNYa3uNA8iW4qRC3J1ESgHtzLz3Zh63tfit0-LnxK5sZJdfFjA-qR4iPbDeG4-trssc-JHw03Y-tUSv29n-HRTsZV8LJSwIQQq1Jq2cNgPADhI6hSBJZhgc4UgxkwDIVktnTTQyJBOzQ_b5ArKxN04:1vyhV1:wx_y8p_PspBj3ARBsAV7a7Q6E7XBNyW78CcUQ7xs9nI",
+    "expire_date": "2026-03-21T02:34:39.362Z"
+  }
+},
+{
+  "model": "users.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$N5vV7cCmFpRjp1O4bFG6vx$0/9GjCT5/EDP7pISA/6Q+e7tFnP5dzz9P3biH82QXks=",
+    "last_login": null,
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "admin@example.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-03-07T02:07:22Z",
+    "avatar": "",
+    "is_premium": false,
+    "items_saved_count": 0,
+    "items_wasted_count": 0,
+    "dietary_preferences": "",
+    "allergies": "",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.user",
+  "pk": 2,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$S3G83w2TwMvVXybNPEYLqO$xKhJWy7TPwcnIVguHj0BqHXqzE8rir6k/bJmpig3ydA=",
+    "last_login": "2026-03-07T02:33:55Z",
+    "is_superuser": true,
+    "username": "sm1le",
+    "first_name": "",
+    "last_name": "",
+    "email": "salievyt@gmail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-03-07T02:33:42Z",
+    "avatar": "",
+    "is_premium": false,
+    "items_saved_count": 0,
+    "items_wasted_count": 0,
+    "dietary_preferences": "",
+    "allergies": "Орехи",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "fridge.product",
+  "pk": 1,
+  "fields": {
+    "user": 2,
+    "category": null,
+    "name": "1234567",
+    "quantity": "1.00",
+    "unit": "PCS",
+    "added_date": "2026-03-07",
+    "expiration_date": "2026-04-07",
+    "status": "ACTIVE",
+    "notes": ""
+  }
+}
+]

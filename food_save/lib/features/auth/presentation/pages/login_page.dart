@@ -2,7 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:food_save/core/router/app_router.gr.dart';
-import 'package:food_save/core/theme/app_colors.dart';
+import 'package:food_save/core/theme/theme.dart';
 import 'package:food_save/core/widgets/base_page.dart';
 import 'package:food_save/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:food_save/core/services/persistence_helper.dart';
@@ -56,15 +56,18 @@ class _LoginPageContent extends BasePage {
 
   @override
   Widget buildBody(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final authState = ref.watch(authControllerProvider);
-    final theme = Theme.of(context);
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppColors.background, Color(0xFFF4F6F8)],
+          colors: [
+            isDark ? AppColors.darkBackground : AppColors.background,
+            isDark ? AppColors.darkSurface : const Color(0xFFF4F6F8),
+          ],
         ),
       ),
       child: SafeArea(
@@ -78,11 +81,13 @@ class _LoginPageContent extends BasePage {
                 onSkip: authState.isLoading
                     ? null
                     : () async {
+                        HapticsService.mediumImpact();
                         await ref.read(authControllerProvider.notifier).loginAsGuest();
                         final newState = ref.read(authControllerProvider);
                         if (newState.data && context.mounted) {
                           context.router.replaceAll([const MainRoute()]);
                         } else if (newState.error != null && context.mounted) {
+                          HapticsService.error();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Ошибка гостевого входа: ${newState.error}')),
                           );
@@ -92,7 +97,7 @@ class _LoginPageContent extends BasePage {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: Column(
                   children: [
                     _AuthCard(
@@ -103,14 +108,14 @@ class _LoginPageContent extends BasePage {
                             label: "Логин",
                             icon: Icons.person_outline,
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: AppSpacing.md + 2),
                           _InputField(
                             controller: passwordController,
                             label: "Пароль",
                             icon: Icons.lock_outline,
                             isPassword: true,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.sm),
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
@@ -118,20 +123,21 @@ class _LoginPageContent extends BasePage {
                               child: const Text("Забыли пароль?"),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.sm),
                           SizedBox(
                             width: double.infinity,
-                            height: 54,
+                            height: AppSpacing.buttonHeight,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: AppSpacing.borderRadiusMd,
                                 ),
                               ),
                               onPressed: authState.isLoading
                                   ? null
                                   : () async {
+                                      HapticsService.mediumImpact();
                                       await ref.read(authControllerProvider.notifier).login(
                                         emailController.text,
                                         passwordController.text,
@@ -139,8 +145,10 @@ class _LoginPageContent extends BasePage {
 
                                       final newState = ref.read(authControllerProvider);
                                       if (newState.data && context.mounted) {
+                                        HapticsService.success();
                                         context.router.replaceAll([const MainRoute()]);
                                       } else if (newState.error != null && context.mounted) {
+                                        HapticsService.error();
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(content: Text('Ошибка входа: ${newState.error}')),
                                         );
@@ -158,13 +166,13 @@ class _LoginPageContent extends BasePage {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: AppSpacing.md + 2),
                     _AuthFooter(
                       text: "Нет аккаунта?",
                       actionText: "Регистрация",
                       onPressed: () => context.pushRoute(const RegisterRoute()),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
                 ),
               ),
@@ -191,50 +199,54 @@ class _AuthHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return SizedBox(
       height: height,
       child: Stack(
         children: [
           Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFFFFF1F1), Color(0xFFFFF7F7)],
+                  colors: isDark 
+                      ? [AppColors.darkSurface, AppColors.darkBackground]
+                      : [const Color(0xFFFFF1F1), const Color(0xFFFFF7F7)],
                 ),
               ),
             ),
           ),
           Positioned(
-            top: 16,
-            right: 16,
+            top: AppSpacing.md,
+            right: AppSpacing.md,
             child: TextButton(
               onPressed: onSkip,
               child: const Text("Гость"),
             ),
           ),
           Positioned(
-            left: 20,
+            left: AppSpacing.lg,
             bottom: 28,
-            right: 20,
+            right: AppSpacing.lg,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
-                    color: AppColors.textSecondary,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                     height: 1.3,
                   ),
                 ),
@@ -254,18 +266,14 @@ class _AuthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpacing.md + 2),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: AppSpacing.borderRadiusXl,
+        boxShadow: AppSpacing.shadowMd,
       ),
       child: child,
     );
@@ -287,6 +295,8 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return TextField(
       controller: controller,
       obscureText: isPassword,
@@ -294,17 +304,17 @@ class _InputField extends StatelessWidget {
         labelText: label,
         prefixIcon: Icon(icon),
         filled: true,
-        fillColor: const Color(0xFFF6F7F9),
+        fillColor: isDark ? AppColors.darkSurfaceVariant : const Color(0xFFF6F7F9),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppSpacing.borderRadiusMd,
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppSpacing.borderRadiusMd,
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppSpacing.borderRadiusMd,
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
       ),
@@ -328,8 +338,17 @@ class _AuthFooter extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(text, style: const TextStyle(color: AppColors.textSecondary)),
-        TextButton(onPressed: onPressed, child: Text(actionText)),
+        Text(text, style: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppColors.darkTextSecondary : AppColors.textSecondary,
+        )),
+        TextButton(
+          onPressed: () {
+            HapticsService.lightImpact();
+            onPressed();
+          }, 
+          child: Text(actionText),
+        ),
       ],
     );
   }

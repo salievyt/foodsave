@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/core/widgets/base_page.dart';
-import 'package:food_save/features/fridge/presentation/controllers/fridge_controller.dart';
-import 'package:food_save/features/fridge/presentation/viewmodels/fridge_view_model.dart' hide filteredFridgeProvider;
+import 'package:food_save/features/fridge/presentation/viewmodels/fridge_view_model.dart';
 import 'package:food_save/features/fridge/presentation/widgets/add_product_sheet.dart';
 import 'package:food_save/core/router/app_router.gr.dart';
+import 'package:food_save/core/utils/responsive.dart';
 import '../widgets/product_list_item.dart';
 
 @RoutePage()
@@ -38,6 +38,7 @@ class _FridgePageContent extends BasePage {
   Widget buildBody(BuildContext context) {
     final activeProducts = ref.watch(filteredFridgeProvider);
     final theme = Theme.of(context);
+    final h = Responsive.hPadding(context);
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
@@ -48,6 +49,7 @@ class _FridgePageContent extends BasePage {
           floating: true,
           pinned: true,
           elevation: 0,
+          // ignore: deprecated_member_use
           backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.8),
           flexibleSpace: FlexibleSpaceBar(
             background: BackdropFilter(
@@ -82,7 +84,7 @@ class _FridgePageContent extends BasePage {
 
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            padding: EdgeInsets.fromLTRB(h, 0, h, 20),
             child: _buildSearchBar(context, ref),
           ),
         ),
@@ -99,7 +101,7 @@ class _FridgePageContent extends BasePage {
           )
         else
           SliverPadding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.symmetric(horizontal: h, vertical: 20),
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) => ProductListItem(product: activeProducts[index]),
@@ -130,6 +132,7 @@ class _FridgePageContent extends BasePage {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
+            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -137,7 +140,7 @@ class _FridgePageContent extends BasePage {
         ],
       ),
       child: TextField(
-        onChanged: (val) => ref.read(fridgeSearchProvider.notifier).state = val,
+        onChanged: (val) => ref.read(fridgeSearchProvider.notifier).update(val),
         decoration: const InputDecoration(
           hintText: "Поиск продуктов...",
           prefixIcon: Icon(Icons.search_rounded, color: AppColors.textSecondary),
@@ -158,8 +161,6 @@ class _EmptyFridgeView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text("🧊", style: TextStyle(fontSize: 48)),
-          SizedBox(height: 12),
           Text(
             "Холодильник пока пуст",
             style: TextStyle(color: AppColors.textSecondary, fontSize: 16, fontWeight: FontWeight.w600),
@@ -184,6 +185,7 @@ class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
     final theme = Theme.of(context);
     final selectedCategory = ref.watch(fridgeCategoryProvider);
     final categories = ['Все', 'Мясо', 'Молочка', 'Овощи', 'Фрукты', 'Напитки', 'Другое'];
+    final h = Responsive.hPadding(context);
 
     return Container(
       color: theme.scaffoldBackgroundColor,
@@ -191,7 +193,7 @@ class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: h, vertical: 8),
         itemCount: categories.length,
         itemBuilder: (context, index) {
           final cat = categories[index];
@@ -204,7 +206,7 @@ class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
   Widget _categoryChip(BuildContext context, String title, bool isSelected) {
     final theme = Theme.of(context);
     return GestureDetector(
-      onTap: () => ref.read(fridgeCategoryProvider.notifier).state = title,
+      onTap: () => ref.read(fridgeCategoryProvider.notifier).update(title),
       child: Container(
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -214,6 +216,7 @@ class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
           boxShadow: [
             if (isSelected)
               BoxShadow(
+                // ignore: deprecated_member_use
                 color: AppColors.primary.withOpacity(0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 4),

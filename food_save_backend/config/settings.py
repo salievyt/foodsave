@@ -21,6 +21,23 @@ env = environ.Env(
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
+# Инициализация Sentry в начале
+SENTRY_DSN = env('SENTRY_DSN', default='')
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.channels import ChannelsIntegration
+    
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            ChannelsIntegration(),
+        ],
+        traces_sample_rate=0.1 if not env('DEBUG', default=True) else 1.0,
+        environment='production' if not env('DEBUG', default=True) else 'development',
+        release='foodsave@1.1.0',
+    )
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -61,7 +78,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # CSRF отключен для JWT API - токены в заголовке
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -91,12 +108,28 @@ ASGI_APPLICATION = 'config.asgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Поддержка PostgreSQL
+db_engine = env('DB_ENGINE', default='django.db.backends.postgresql')
+
+if db_engine == 'django.db.backends.postgresql':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': env('DB_NAME', default='foodsave'),
+            'USER': env('DB_USER', default='foodsave'),
+            'PASSWORD': env('DB_PASSWORD', default='foodsave_password'),
+            'HOST': env('DB_HOST', default='localhost'),
+            'PORT': env('DB_PORT', default='5432'),
+        }
     }
-}
+else:
+    # SQLite для разработки
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -156,9 +189,17 @@ REST_FRAMEWORK = {
 
 # Allow CORS for flutter app testing
 CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=True)
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = ['*']
+CORS_EXPOSE_HEADERS = ['Content-Type', 'Authorization']
+
+# CSRF настройки - отключены для JWT
+CSRF_COOKIE_HTTPONLY = False
+CSRF_USE_SESSIONS = False
 
 from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
 }
+

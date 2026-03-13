@@ -1,7 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:food_save/core/theme/app_colors.dart';
+import 'package:food_save/core/theme/theme.dart';
 import 'package:food_save/core/widgets/base_page.dart';
 import 'package:food_save/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:food_save/core/router/app_router.gr.dart';
@@ -69,14 +69,18 @@ class _RegisterPageContent extends BasePage {
 
   @override
   Widget buildBody(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final authState = ref.watch(authControllerProvider);
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppColors.background, Color(0xFFF4F6F8)],
+          colors: [
+            isDark ? AppColors.darkBackground : AppColors.background,
+            isDark ? AppColors.darkSurface : const Color(0xFFF4F6F8),
+          ],
         ),
       ),
       child: SafeArea(
@@ -90,11 +94,13 @@ class _RegisterPageContent extends BasePage {
                 onSkip: authState.isLoading
                     ? null
                     : () async {
+                        HapticsService.mediumImpact();
                         await ref.read(authControllerProvider.notifier).loginAsGuest();
                         final newState = ref.read(authControllerProvider);
                         if (newState.data && context.mounted) {
                           context.router.replaceAll([const MainRoute()]);
                         } else if (newState.error != null && context.mounted) {
+                          HapticsService.error();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Ошибка гостевого входа: ${newState.error}')),
                           );
@@ -104,7 +110,7 @@ class _RegisterPageContent extends BasePage {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: Form(
                   key: formKey,
                   child: Column(
@@ -118,7 +124,7 @@ class _RegisterPageContent extends BasePage {
                               icon: Icons.person_outline_rounded,
                               validator: (v) => v!.isEmpty ? "Введите логин" : null,
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: AppSpacing.md + 2),
                             _InputField(
                               controller: emailController,
                               label: "Email",
@@ -126,7 +132,7 @@ class _RegisterPageContent extends BasePage {
                               keyboardType: TextInputType.emailAddress,
                               validator: (v) => !v!.contains('@') ? "Введите корректный email" : null,
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: AppSpacing.md + 2),
                             _InputField(
                               controller: passwordController,
                               label: "Пароль",
@@ -134,21 +140,22 @@ class _RegisterPageContent extends BasePage {
                               isPassword: true,
                               validator: (v) => v!.length < 6 ? "Минимум 6 символов" : null,
                             ),
-                            const SizedBox(height: 18),
+                            const SizedBox(height: AppSpacing.md + 2),
                             SizedBox(
                               width: double.infinity,
-                              height: 54,
+                              height: AppSpacing.buttonHeight,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: AppSpacing.borderRadiusMd,
                                   ),
                                   elevation: 0,
                                 ),
                                 onPressed: authState.isLoading
                                     ? null
                                     : () async {
+                                        HapticsService.mediumImpact();
                                         if (formKey.currentState!.validate()) {
                                           await ref.read(authControllerProvider.notifier).register(
                                             usernameController.text.trim(),
@@ -158,11 +165,13 @@ class _RegisterPageContent extends BasePage {
 
                                           final newState = ref.read(authControllerProvider);
                                           if (newState.data && context.mounted) {
+                                            HapticsService.success();
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               const SnackBar(content: Text("Регистрация успешна! Войдите в аккаунт.")),
                                             );
-                                            context.router.pop();
+                                            context.router.maybePop();
                                           } else if (newState.error != null && context.mounted) {
+                                            HapticsService.error();
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(content: Text("Ошибка: ${newState.error}")),
                                             );
@@ -184,13 +193,13 @@ class _RegisterPageContent extends BasePage {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: AppSpacing.md + 2),
                       _AuthFooter(
                         text: "Уже есть аккаунт?",
                         actionText: "Войти",
-                        onPressed: () => context.router.pop(),
+                        onPressed: () => context.router.maybePop(),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSpacing.xxl),
                     ],
                   ),
                 ),
@@ -201,7 +210,6 @@ class _RegisterPageContent extends BasePage {
       ),
     );
   }
-
 }
 
 class _AuthHero extends StatelessWidget {
@@ -219,50 +227,54 @@ class _AuthHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return SizedBox(
       height: height,
       child: Stack(
         children: [
           Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFFFFF1F1), Color(0xFFFFF7F7)],
+                  colors: isDark 
+                      ? [AppColors.darkSurface, AppColors.darkBackground]
+                      : [const Color(0xFFFFF1F1), const Color(0xFFFFF7F7)],
                 ),
               ),
             ),
           ),
           Positioned(
-            top: 16,
-            right: 16,
+            top: AppSpacing.md,
+            right: AppSpacing.md,
             child: TextButton(
               onPressed: onSkip,
               child: const Text("Гость"),
             ),
           ),
           Positioned(
-            left: 20,
+            left: AppSpacing.lg,
             bottom: 28,
-            right: 20,
+            right: AppSpacing.lg,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
-                    color: AppColors.textSecondary,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                     height: 1.3,
                   ),
                 ),
@@ -282,18 +294,14 @@ class _AuthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpacing.md + 2),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: AppSpacing.borderRadiusXl,
+        boxShadow: AppSpacing.shadowMd,
       ),
       child: child,
     );
@@ -319,6 +327,8 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return TextFormField(
       controller: controller,
       obscureText: isPassword,
@@ -326,19 +336,19 @@ class _InputField extends StatelessWidget {
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: AppColors.textSecondary),
+        prefixIcon: Icon(icon, color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
         filled: true,
-        fillColor: const Color(0xFFF6F7F9),
+        fillColor: isDark ? AppColors.darkSurfaceVariant : const Color(0xFFF6F7F9),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppSpacing.borderRadiusMd,
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppSpacing.borderRadiusMd,
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppSpacing.borderRadiusMd,
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
       ),
@@ -359,11 +369,21 @@ class _AuthFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(text, style: const TextStyle(color: AppColors.textSecondary)),
-        TextButton(onPressed: onPressed, child: Text(actionText)),
+        Text(text, style: TextStyle(
+          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+        )),
+        TextButton(
+          onPressed: () {
+            HapticsService.lightImpact();
+            onPressed();
+          }, 
+          child: Text(actionText),
+        ),
       ],
     );
   }

@@ -34,6 +34,11 @@ class PersistenceHelper {
     return prefs.getString(_accessTokenKey);
   }
 
+  static Future<String?> getRefreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_refreshTokenKey);
+  }
+
   static Future<bool> isLoggedIn() async {
     final token = await getAccessToken();
     return token != null && token.isNotEmpty;

@@ -6,23 +6,11 @@ final fridgeControllerProvider = NotifierProvider<FridgeController, List<Product
   return FridgeController();
 });
 
-final filteredFridgeProvider = Provider<List<Product>>((ref) {
-  final products = ref.watch(fridgeControllerProvider);
-  final search = ref.watch(fridgeSearchProvider);
-  final category = ref.watch(fridgeCategoryProvider);
-  
-  return products.where((p) {
-    final isActive = !p.isEaten && !p.isSpoiled;
-    final matchesSearch = search.isEmpty || p.name.toLowerCase().contains(search.toLowerCase());
-    final matchesCategory = category == 'Все' || p.category == category;
-    return isActive && matchesSearch && matchesCategory;
-  }).toList();
-});
-
 class FridgeController extends Notifier<List<Product>> {
   @override
   List<Product> build() {
-    return ref.watch(fridgeViewModelProvider).data;
+    final fridgeAsync = ref.watch(fridgeViewModelProvider);
+    return fridgeAsync.valueOrNull ?? [];
   }
 
   Future<void> addProduct(Product product) async {

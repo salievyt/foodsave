@@ -5,6 +5,7 @@ import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/features/fridge/presentation/controllers/fridge_controller.dart';
 import 'package:food_save/features/fridge/domain/models/product.dart';
 import 'package:food_save/core/widgets/base_page.dart';
+import 'package:food_save/core/utils/responsive.dart';
 
 @RoutePage()
 class StatisticsPage extends ConsumerWidget {
@@ -50,7 +51,10 @@ class _StatisticsPageContent extends BasePage {
     final theme = Theme.of(context);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.symmetric(
+        horizontal: Responsive.hPadding(context),
+        vertical: 20,
+      ),
       child: Column(
         children: [
           // Efficiency Card
@@ -59,7 +63,7 @@ class _StatisticsPageContent extends BasePage {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [AppColors.primary, Color(0xFF62D2A2)],
+                colors: [AppColors.primary, Color(0xFFFF6B6B)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

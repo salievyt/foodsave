@@ -44,11 +44,12 @@ class AuthController extends Notifier<AuthState> {
     try {
       await ref.read(authViewModelProvider.notifier).login(email, password);
       final vmState = ref.read(authViewModelProvider);
+      final isAuthenticated = vmState.valueOrNull ?? false;
       state = state.copyWith(
-        data: vmState.data,
-        isAuthenticated: vmState.data,
+        data: isAuthenticated,
+        isAuthenticated: isAuthenticated,
         isLoading: false,
-        error: vmState.error?.toString(),
+        error: vmState.hasError ? vmState.error.toString() : null,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -70,11 +71,12 @@ class AuthController extends Notifier<AuthState> {
     try {
       await ref.read(authViewModelProvider.notifier).loginAsGuest();
       final vmState = ref.read(authViewModelProvider);
+      final isAuthenticated = vmState.valueOrNull ?? false;
       state = state.copyWith(
-        data: vmState.data,
-        isAuthenticated: vmState.data,
+        data: isAuthenticated,
+        isAuthenticated: isAuthenticated,
         isLoading: false,
-        error: vmState.error?.toString(),
+        error: vmState.hasError ? vmState.error.toString() : null,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

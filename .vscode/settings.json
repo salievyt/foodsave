@@ -8,5 +8,6 @@
         "position": "center",
         "interval": 0,
         "random": false
-    }
+    },
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }

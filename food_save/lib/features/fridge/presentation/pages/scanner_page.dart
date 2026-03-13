@@ -11,8 +11,6 @@ import 'package:food_save/features/fridge/domain/models/product.dart';
 import 'package:food_save/features/fridge/presentation/controllers/fridge_controller.dart';
 import 'package:food_save/core/utils/emoji_helper.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-// New extracted widgets
 import '../widgets/scanner_overlay.dart';
 import '../widgets/scanner_controls.dart';
 
@@ -146,11 +144,13 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
 
       if (mounted) {
         setState(() => _isScanning = false);
+        // ignore: use_build_context_synchronously
         context.router.replace(const FridgeRoute());
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isScanning = false);
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Ошибка сканирования: $e')),
         );

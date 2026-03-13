@@ -8,7 +8,8 @@ final recipesControllerProvider = NotifierProvider<RecipesController, List<Recip
 class RecipesController extends Notifier<List<Recipe>> {
   @override
   List<Recipe> build() {
-    return ref.watch(recipesViewModelProvider).data;
+    final recipesAsync = ref.watch(recipesViewModelProvider);
+    return recipesAsync.valueOrNull ?? [];
   }
 
   Future<void> fetchRecipes() async {

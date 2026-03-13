@@ -1,15 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:food_save/features/support/presentation/viewmodels/support_chat_view_model.dart';
-import 'package:food_save/core/architecture/base_view_model.dart';
 
-final supportChatControllerProvider = NotifierProvider<SupportChatController, BaseState<List<Map<String, dynamic>>>>(() {
+final supportChatControllerProvider = NotifierProvider<SupportChatController, List<Map<String, dynamic>>>(() {
   return SupportChatController();
 });
 
-class SupportChatController extends Notifier<BaseState<List<Map<String, dynamic>>>> {
+class SupportChatController extends Notifier<List<Map<String, dynamic>>> {
   @override
-  BaseState<List<Map<String, dynamic>>> build() {
-    return ref.watch(supportChatViewModelProvider);
+  List<Map<String, dynamic>> build() {
+    final chatAsync = ref.watch(supportChatViewModelProvider);
+    return chatAsync.valueOrNull ?? [];
   }
 
   Future<void> fetchMessages() async {

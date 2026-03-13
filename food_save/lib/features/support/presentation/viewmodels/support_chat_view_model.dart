@@ -1,30 +1,29 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:food_save/core/architecture/base_view_model.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:food_save/features/support/data/repositories/support_repository_impl.dart';
 import 'package:intl/intl.dart';
 
-final supportRepositoryProvider = Provider<SupportRepository>((ref) {
+part 'support_chat_view_model.g.dart';
+
+@riverpod
+SupportRepository supportRepository(Ref ref) {
   return SupportRepositoryImpl();
-});
+}
 
-final supportChatViewModelProvider = NotifierProvider<SupportChatViewModel, BaseState<List<Map<String, dynamic>>>>(() {
-  return SupportChatViewModel();
-});
-
-class SupportChatViewModel extends BaseViewModel<List<Map<String, dynamic>>> {
-  late final SupportRepository _repository;
+@riverpod
+class SupportChatViewModel extends _$SupportChatViewModel {
+  late SupportRepository _repository;
 
   @override
-  List<Map<String, dynamic>> get initialData => [];
-
-  @override
-  BaseState<List<Map<String, dynamic>>> build() {
+  AsyncValue<List<Map<String, dynamic>>> build() {
     _repository = ref.watch(supportRepositoryProvider);
-    return super.build();
+    fetchMessages();
+    return const AsyncValue.loading();
   }
 
   Future<void> fetchMessages() async {
-    await safeExecute(() async {
+    state = const AsyncValue.loading();
+    try {
       final data = await _repository.getSupportMessages();
       final messages = data.map((item) {
         final date = DateTime.parse(item['created_at']).toLocal();
@@ -34,11 +33,14 @@ class SupportChatViewModel extends BaseViewModel<List<Map<String, dynamic>>> {
           'time': DateFormat('HH:mm').format(date),
         };
       }).toList();
-      updateData(messages);
-    });
+      state = AsyncValue.data(messages);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
   }
 
   void addMessage(Map<String, dynamic> message) {
-    updateData([...state.data, message]);
+    final currentMessages = state.valueOrNull ?? [];
+    state = AsyncValue.data([...currentMessages, message]);
   }
 }

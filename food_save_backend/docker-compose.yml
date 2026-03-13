@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: foodsave_db
+    restart: always
+    environment:
+      POSTGRES_DB: foodsave
+      POSTGRES_USER: foodsave
+      POSTGRES_PASSWORD: foodsave_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U foodsave -d foodsave"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: foodsave_backend
+    restart: always
+    command: >
+      sh -c "
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000
+      "
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DJANGO_SECRET_KEY=django-insecure-owxftx-k#=wz$$pz)(dp6)0h$jv3sw-=h75c4!3hc*zgk0$sz39
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - CORS_ALLOW_ALL_ORIGINS=True
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_NAME=foodsave
+      - DB_USER=foodsave
+      - DB_PASSWORD=foodsave_password
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:

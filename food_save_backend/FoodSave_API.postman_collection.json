@@ -1,0 +1,279 @@
+{
+  "info": {
+    "name": "FoodSave API",
+    "description": "API документация для приложения FoodSave - управления продуктами в холодильнике и рецептами",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Auth - Аутентификация",
+      "item": [
+        {
+          "name": "Register - Регистрация",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register/",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"testuser\",\n    \"email\": \"test@example.com\",\n    \"password\": \"strongpassword123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - Вход (получение токенов)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login/",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"strongpassword123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh Token - Обновление токена",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login/refresh/",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refresh\": \"<ваш_refresh_токен>\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Profile - Получить профиль",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/profile/"
+          }
+        },
+        {
+          "name": "Update Profile - Обновить профиль",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/auth/profile/",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"newusername\",\n    \"email\": \"newemail@example.com\",\n    \"dietary_preferences\": [\"vegetarian\"],\n    \"allergies\": [\"nuts\"]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Fridge - Холодильник",
+      "item": [
+        {
+          "name": "Categories - Список категорий",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/fridge/categories/"
+          }
+        },
+        {
+          "name": "Products List - Список продуктов",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/fridge/products/"
+          }
+        },
+        {
+          "name": "Add Product - Добавить продукт",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/fridge/products/",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Молоко\",\n    \"category\": 1,\n    \"quantity\": 1,\n    \"unit\": \"L\",\n    \"expiration_date\": \"2025-04-15\",\n    \"status\": \"ACTIVE\",\n    \"notes\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Product - Получить продукт",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/fridge/products/{id}/"
+          }
+        },
+        {
+          "name": "Update Product - Обновить продукт",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/fridge/products/{id}/",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Молоко обновлённое\",\n    \"category\": 1,\n    \"quantity\": 2,\n    \"unit\": \"L\",\n    \"expiration_date\": \"2025-04-20\",\n    \"status\": \"ACTIVE\",\n    \"notes\": \"Обновлено\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Product - Удалить продукт",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/fridge/products/{id}/"
+          }
+        },
+        {
+          "name": "Scan Receipt - Сканировать чек",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/fridge/products/scan-receipt/",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "receipt_image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Recipes - Рецепты",
+      "item": [
+        {
+          "name": "Recipes List - Список рецептов",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/recipes/"
+          }
+        },
+        {
+          "name": "Get Recipe - Получить рецепт",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/recipes/{id}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Notifications - Уведомления",
+      "item": [
+        {
+          "name": "Notifications List - Список уведомлений",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/notifications/list/"
+          }
+        },
+        {
+          "name": "Create Notification - Создать уведомление",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/notifications/list/",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Тестовое уведомление\",\n    \"content\": \"Это тестовое уведомление\",\n    \"notification_type\": \"info\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Mark as Read - Отметить как прочитанное",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/notifications/list/{id}/mark_read/"
+          }
+        },
+        {
+          "name": "Support Chat History - История чата поддержки",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/notifications/support-chat/"
+          }
+        },
+        {
+          "name": "Send Support Message - Отправить сообщение в поддержку",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/notifications/support-chat/",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Здравствуйте, нужна помощь!\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

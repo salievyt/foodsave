@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:food_save/core/architecture/base_view_model.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:food_save/features/fridge/presentation/controllers/fridge_controller.dart';
 import 'package:food_save/features/recipes/data/repositories/recipes_repository_impl.dart';
 import 'package:food_save/features/recipes/domain/repositories/recipes_repository.dart';
+
+part 'recipes_view_model.g.dart';
 
 class RecipeStep {
   final int stepNumber;
@@ -89,16 +91,15 @@ class Recipe {
   }
 }
 
-final recipesRepositoryProvider = Provider<RecipesRepository>((ref) {
+@riverpod
+RecipesRepository recipesRepository(Ref ref) {
   return RecipesRepositoryImpl();
-});
+}
 
-final favoriteRecipesProvider = StateNotifierProvider<FavoriteRecipesNotifier, List<Recipe>>((ref) {
-  return FavoriteRecipesNotifier();
-});
-
-class FavoriteRecipesNotifier extends StateNotifier<List<Recipe>> {
-  FavoriteRecipesNotifier() : super([]);
+@riverpod
+class FavoriteRecipes extends _$FavoriteRecipes {
+  @override
+  List<Recipe> build() => [];
 
   void toggleFavorite(Recipe recipe) {
     if (state.any((r) => r.id == recipe.id)) {
@@ -111,80 +112,59 @@ class FavoriteRecipesNotifier extends StateNotifier<List<Recipe>> {
   bool isFavorite(String id) => state.any((r) => r.id == id);
 }
 
-final recipesViewModelProvider = NotifierProvider<RecipesViewModel, BaseState<List<Recipe>>>(() {
-  return RecipesViewModel();
-});
-
-class RecipesViewModel extends Notifier<BaseState<List<Recipe>>> {
-  late final RecipesRepository _repository;
+@riverpod
+class RecipesViewModel extends _$RecipesViewModel {
+  late RecipesRepository _repository;
 
   @override
-  BaseState<List<Recipe>> build() {
+  AsyncValue<List<Recipe>> build() {
     _repository = ref.watch(recipesRepositoryProvider);
-    state = BaseState(data: []);
     fetchRecipes();
-    return state;
-  }
-
-  void setLoading(bool loading) {
-    state = state.copyWith(isLoading: loading);
-  }
-
-  void setError(Object? error) {
-    state = state.copyWith(error: error, isLoading: false);
-  }
-
-  void updateData(List<Recipe> data) {
-    state = state.copyWith(data: data, isLoading: false, error: null);
-  }
-
-  Future<void> safeExecute(Future<void> Function() task) async {
-    try {
-      setLoading(true);
-      await task();
-    } catch (e) {
-      setError(e);
-    } finally {
-      setLoading(false);
-    }
+    return const AsyncValue.loading();
   }
 
   Future<void> fetchRecipes() async {
-    await safeExecute(() async {
+    state = const AsyncValue.loading();
+    try {
       final recipes = await _repository.getRecipes();
-      updateData(recipes);
-    });
+      state = AsyncValue.data(recipes);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
   }
 }
 
 /// Smart filtered recipes — sorted by match percentage with fridge products.
-final filteredRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
-  final recipesState = ref.watch(recipesViewModelProvider);
+@riverpod
+AsyncValue<List<Recipe>> filteredRecipes(Ref ref) {
+  final recipesAsync = ref.watch(recipesViewModelProvider);
   final fridgeProducts = ref.watch(fridgeControllerProvider);
 
-  if (recipesState.isLoading) return const AsyncValue.loading();
-  if (recipesState.error != null) return AsyncValue.error(recipesState.error!, StackTrace.current);
+  return recipesAsync.when(
+    data: (recipes) {
+      final activeProductNames = fridgeProducts
+          .where((p) => !p.isEaten && !p.isSpoiled)
+          .map((p) => p.name.toLowerCase())
+          .toSet();
 
-  final recipes = recipesState.data;
-  final activeProductNames = fridgeProducts
-      .where((p) => !p.isEaten && !p.isSpoiled)
-      .map((p) => p.name.toLowerCase())
-      .toSet();
+      final result = recipes.map((recipe) {
+        if (recipe.ingredients.isEmpty) {
+          recipe.matchPercent = 0;
+        } else {
+          final matched = recipe.ingredients.where(
+            (ing) => activeProductNames.any((name) => 
+              name.contains(ing.toLowerCase()) || ing.toLowerCase().contains(name)
+            ),
+          ).length;
+          recipe.matchPercent = (matched / recipe.ingredients.length) * 100;
+        }
+        return recipe;
+      }).toList();
 
-  final result = recipes.map((recipe) {
-    if (recipe.ingredients.isEmpty) {
-      recipe.matchPercent = 0;
-    } else {
-      final matched = recipe.ingredients.where(
-        (ing) => activeProductNames.any((name) => 
-          name.contains(ing.toLowerCase()) || ing.toLowerCase().contains(name)
-        ),
-      ).length;
-      recipe.matchPercent = (matched / recipe.ingredients.length) * 100;
-    }
-    return recipe;
-  }).toList();
-
-  result.sort((a, b) => b.matchPercent.compareTo(a.matchPercent));
-  return AsyncValue.data(result);
-});
+      result.sort((a, b) => b.matchPercent.compareTo(a.matchPercent));
+      return AsyncValue.data(result);
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
+}

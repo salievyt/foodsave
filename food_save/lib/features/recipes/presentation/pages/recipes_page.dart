@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/core/widgets/base_page.dart';
@@ -9,6 +10,7 @@ import 'package:food_save/features/fridge/domain/models/product.dart';
 import 'package:food_save/features/fridge/presentation/controllers/fridge_controller.dart';
 import 'package:food_save/features/recipes/presentation/viewmodels/recipes_view_model.dart';
 import 'package:food_save/core/router/app_router.gr.dart';
+import 'package:food_save/core/utils/responsive.dart';
 
 @RoutePage()
 class RecipesPage extends ConsumerWidget {
@@ -38,6 +40,7 @@ class _RecipesPageContent extends BasePage {
   Widget buildBody(BuildContext context) {
     final products = ref.watch(fridgeControllerProvider);
     final theme = Theme.of(context);
+    final h = Responsive.hPadding(context);
 
     // Ingredients that are urgent/soon
     final ingredientsToUse = products.where((p) {
@@ -72,7 +75,7 @@ class _RecipesPageContent extends BasePage {
 
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: EdgeInsets.symmetric(horizontal: h, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -131,7 +134,7 @@ class _RecipesPageContent extends BasePage {
               );
             }
             return SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: h),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) => _buildRecipeCard(context, ref, recipe: recipes[index]),
@@ -140,9 +143,14 @@ class _RecipesPageContent extends BasePage {
               ),
             );
           },
-          loading: () => const SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          loading: () => SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: h),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => _buildRecipeSkeleton(context),
+                childCount: 4,
+              ),
+            ),
           ),
           error: (e, s) => SliverFillRemaining(
             hasScrollBody: false,
@@ -325,6 +333,101 @@ class _RecipesPageContent extends BasePage {
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
         ),
       ],
+    );
+  }
+
+  Widget _buildRecipeSkeleton(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(color: AppColors.shadow, blurRadius: 20, offset: const Offset(0, 8)),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Skeletonizer(
+            enabled: true,
+            child: Container(
+              height: 140,
+              width: double.infinity,
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Skeletonizer(
+                  enabled: true,
+                  child: Row(
+                    children: [
+                      _buildTag(Icons.timer_outlined, '30 мин'),
+                      const SizedBox(width: 8),
+                      _buildTag(Icons.bar_chart_rounded, 'Средне'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Skeletonizer(
+                  enabled: true,
+                  child: Container(
+                    height: 24,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Skeletonizer(
+                  enabled: true,
+                  child: Container(
+                    height: 16,
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    decoration: BoxDecoration(
+                      color: Colors.grey,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Skeletonizer(
+                  enabled: true,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.grey,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.grey,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

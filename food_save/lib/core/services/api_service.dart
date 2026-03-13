@@ -28,21 +28,7 @@ class ApiService {
       logPrint: (obj) => print(obj),
     ));
 
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final token = await PersistenceHelper.getAccessToken();
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
-        }
-        return handler.next(options);
-      },
-      onError: (e, handler) async {
-        if (e.response?.statusCode == 401) {
-          // Token expired, could implement refresh logic here
-        }
-        return handler.next(e);
-      },
-    ));
+    _dio.interceptors.add(AuthInterceptor());
   }
 
   // Auth
@@ -106,4 +92,95 @@ class ApiService {
   Future<Response> getSupportMessages() async {
     return _dio.get('/notifications/support-chat/');
   }
+}
+
+/// Interceptor для автоматического обновления JWT токена
+class AuthInterceptor extends Interceptor {
+  bool _isRefreshing = false;
+  final List<_QueuedRequest> _queuedRequests = [];
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    final token = await PersistenceHelper.getAccessToken();
+    if (token != null) {
+      options.headers['Authorization'] = 'Bearer $token';
+    }
+    handler.next(options);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    if (err.response?.statusCode == 401) {
+      // Пробуем обновить токен
+      final refreshed = await _refreshToken();
+      
+      if (refreshed) {
+        // Повторяем оригинальный запрос с новым токеном
+        try {
+          final opts = err.requestOptions;
+          final newToken = await PersistenceHelper.getAccessToken();
+          opts.headers['Authorization'] = 'Bearer $newToken';
+          
+          final dio = Dio(BaseOptions(
+            baseUrl: opts.baseUrl,
+            connectTimeout: const Duration(seconds: 10),
+            receiveTimeout: const Duration(seconds: 10),
+          ));
+          
+          final response = await dio.fetch(opts);
+          return handler.resolve(response);
+        } catch (e) {
+          return handler.next(err);
+        }
+      } else {
+        // Не удалось обновить токен - очищаем и возвращаем ошибку
+        await PersistenceHelper.clearAuthTokens();
+        return handler.next(err);
+      }
+    }
+    return handler.next(err);
+  }
+
+  Future<bool> _refreshToken() async {
+    if (_isRefreshing) return false;
+    
+    _isRefreshing = true;
+    
+    try {
+      final refreshToken = await PersistenceHelper.getRefreshToken();
+      if (refreshToken == null) {
+        _isRefreshing = false;
+        return false;
+      }
+
+      final dio = Dio(BaseOptions(
+        baseUrl: ApiService()._dio.options.baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ));
+
+      final response = await dio.post('/auth/login/refresh/', data: {
+        'refresh': refreshToken,
+      });
+
+      if (response.statusCode == 200) {
+        final newAccessToken = response.data['access'];
+        await PersistenceHelper.saveAuthTokens(newAccessToken, refreshToken);
+        _isRefreshing = false;
+        return true;
+      }
+    } catch (e) {
+      // Ошибка при refresh - токен недействителен
+    }
+    
+    _isRefreshing = false;
+    return false;
+  }
+}
+
+class _QueuedRequest {
+  final RequestOptions options;
+  final ResponseInterceptorHandler handler;
+
+  _QueuedRequest(this.options, this.handler);
 }

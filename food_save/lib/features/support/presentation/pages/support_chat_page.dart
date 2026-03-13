@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:food_save/core/router/app_router.gr.dart';
+import 'package:food_save/core/utils/responsive.dart';
 
 import '../widgets/support_message_bubble.dart';
 import '../widgets/support_input_bar.dart';
@@ -162,11 +163,7 @@ class _SupportChatPageContent extends BasePage {
 
   @override
   Widget buildBody(BuildContext context) {
-    final chatState = ref.watch(supportChatControllerProvider);
-
-    if (chatState.isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-    }
+    final chatMessages = ref.watch(supportChatControllerProvider);
 
     if (needsAuth) {
       return Center(
@@ -197,17 +194,20 @@ class _SupportChatPageContent extends BasePage {
     return Column(
       children: [
         Expanded(
-          child: chatState.data.isEmpty
+          child: chatMessages.isEmpty
               ? const SupportEmptyState(
                   title: "Напишите в поддержку",
                   subtitle: "Мы отвечаем в рабочее время",
                 )
               : ListView.builder(
                   controller: scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: chatState.data.length,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: Responsive.hPadding(context),
+                    vertical: 16,
+                  ),
+                  itemCount: chatMessages.length,
                   itemBuilder: (context, index) {
-                    final message = chatState.data[index];
+                    final message = chatMessages[index];
                     final isUser = message['isUser'] as bool;
                     return SupportMessageBubble(
                       text: message['text'] as String,

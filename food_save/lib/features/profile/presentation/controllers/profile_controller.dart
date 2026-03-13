@@ -33,10 +33,10 @@ class UserProfileController extends Notifier<ProfileState> {
   @override
   ProfileState build() {
     final vmState = ref.watch(profileViewModelProvider);
-    return ProfileState(
-      data: vmState.data,
-      isLoading: vmState.isLoading,
-      error: vmState.error,
+    return vmState.when(
+      data: (data) => ProfileState(data: data, isLoading: false),
+      loading: () => ProfileState(isLoading: true),
+      error: (error, _) => ProfileState(error: error, isLoading: false),
     );
   }
 

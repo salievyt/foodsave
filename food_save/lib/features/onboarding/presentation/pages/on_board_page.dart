@@ -5,6 +5,7 @@ import 'package:food_save/core/router/app_router.gr.dart';
 import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/core/services/persistence_helper.dart';
 import 'package:food_save/core/widgets/base_page.dart';
+import 'package:food_save/core/utils/responsive.dart';
 import 'onboard_card.dart';
 import 'onboard_model.dart';
 
@@ -94,7 +95,10 @@ class _OnBoardPageContent extends BasePage {
           children: [
             // Skip button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: Responsive.hPadding(context),
+                vertical: 8,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -136,7 +140,10 @@ class _OnBoardPageContent extends BasePage {
 
             // Indicators & Button Controls
             Padding(
-              padding: const EdgeInsets.all(32),
+              padding: EdgeInsets.symmetric(
+                horizontal: Responsive.hPadding(context),
+                vertical: 24,
+              ),
               child: Column(
                 children: [
                   Row(

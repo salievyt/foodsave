@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:food_save/core/theme/app_colors.dart';
+import 'package:food_save/core/theme/app_spacing.dart';
 
 class HomeActionBar extends StatelessWidget {
   final VoidCallback onScan;
@@ -17,11 +18,12 @@ class HomeActionBar extends StatelessWidget {
     return Row(
       children: [
         Expanded(
+          flex: 3,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: AppSpacing.borderRadiusMd,
               ),
               elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -33,19 +35,22 @@ class HomeActionBar extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: theme.dividerColor.withOpacity(0.6)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          flex: 2,
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: theme.dividerColor.withOpacity(0.6)),
+              shape: RoundedRectangleBorder(
+                borderRadius: AppSpacing.borderRadiusMd,
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 14),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          ),
-          onPressed: onOpenFridge,
-          child: const Text(
-            "Холодильник",
-            style: TextStyle(fontWeight: FontWeight.w600),
+            onPressed: onOpenFridge,
+            child: const Text(
+              "Холодильник",
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ),
       ],
