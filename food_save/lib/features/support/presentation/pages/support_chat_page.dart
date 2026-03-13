@@ -1,7 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/core/widgets/base_page.dart';
 import 'package:food_save/features/support/presentation/controllers/support_chat_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';

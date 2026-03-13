@@ -97,6 +97,7 @@ class ApiService {
 /// Interceptor для автоматического обновления JWT токена
 class AuthInterceptor extends Interceptor {
   bool _isRefreshing = false;
+  // ignore: unused_field
   final List<_QueuedRequest> _queuedRequests = [];
 
   @override

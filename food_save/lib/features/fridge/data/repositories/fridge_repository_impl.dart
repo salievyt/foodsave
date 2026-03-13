@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:food_save/core/architecture/base_repository.dart';
 import 'package:food_save/core/utils/emoji_helper.dart';
 import 'package:food_save/features/fridge/domain/models/product.dart';

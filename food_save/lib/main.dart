@@ -38,6 +38,7 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   bool get isDark => state == ThemeMode.dark;
 }
 
+// ignore: unused_element
 Future<void> _initSentry() async {
   final sentryDsn = dotenv.env['SENTRY_DSN'] ?? '';
   

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:food_save/core/theme/app_colors.dart';
 
 class ProfileTile extends StatelessWidget {
   final IconData icon;
@@ -28,6 +27,7 @@ class ProfileTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.cardColor,
           borderRadius: BorderRadius.circular(14),
+              // ignore: deprecated_member_use
           border: Border.all(color: theme.dividerColor.withOpacity(0.6)),
         ),
         child: Row(
@@ -51,12 +51,14 @@ class ProfileTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       subtitle!,
+              // ignore: deprecated_member_use
                       style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 12),
                     ),
                   ]
                 ],
               ),
             ),
+              // ignore: deprecated_member_use
             trailing ?? Icon(Icons.chevron_right, color: theme.colorScheme.onSurface.withOpacity(0.5)),
           ],
         ),

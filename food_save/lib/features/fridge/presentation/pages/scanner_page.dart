@@ -32,6 +32,7 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
   late AnimationController _scanLineController;
   late Animation<double> _scanLineAnimation;
   late AnimationController _fadeInController;
+  // ignore: unused_field
   late Animation<double> _fadeInAnimation;
   late AnimationController _scanningDotsController;
 

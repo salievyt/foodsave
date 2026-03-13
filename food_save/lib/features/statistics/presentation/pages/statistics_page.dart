@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/features/fridge/presentation/controllers/fridge_controller.dart';
-import 'package:food_save/features/fridge/domain/models/product.dart';
 import 'package:food_save/core/widgets/base_page.dart';
 import 'package:food_save/core/utils/responsive.dart';
 

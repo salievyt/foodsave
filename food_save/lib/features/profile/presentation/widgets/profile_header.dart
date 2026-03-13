@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/features/profile/presentation/viewmodels/profile_view_model.dart';
 
 class ProfileHeader extends StatelessWidget {
@@ -27,6 +26,7 @@ class ProfileHeader extends StatelessWidget {
             decoration: BoxDecoration(
               color: theme.cardColor,
               shape: BoxShape.circle,
+              // ignore: deprecated_member_use
               border: Border.all(color: theme.dividerColor.withOpacity(0.6)),
               image: profile.avatarUrl != null
                   ? DecorationImage(
@@ -36,6 +36,7 @@ class ProfileHeader extends StatelessWidget {
                   : null,
             ),
             child: profile.avatarUrl == null
+              // ignore: deprecated_member_use
                 ? Icon(Icons.person_outline, color: theme.colorScheme.onSurface.withOpacity(0.6))
                 : null,
           ),
@@ -52,6 +53,7 @@ class ProfileHeader extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 profile.email ?? "",
+              // ignore: deprecated_member_use
                 style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
               ),
               if (badge != null) ...[
@@ -63,6 +65,7 @@ class ProfileHeader extends StatelessWidget {
         ),
         IconButton(
           onPressed: onAvatarTap,
+              // ignore: deprecated_member_use
           icon: Icon(Icons.edit_outlined, color: theme.colorScheme.onSurface.withOpacity(0.6)),
         )
       ],

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:food_save/core/theme/app_colors.dart';
 import 'package:food_save/features/profile/presentation/controllers/profile_controller.dart';
 
 class HomeBrandHeader extends ConsumerWidget {
@@ -30,6 +29,7 @@ class HomeBrandHeader extends ConsumerWidget {
             Text(
               "Привет, $name",
               style: theme.textTheme.bodyMedium?.copyWith(
+              // ignore: deprecated_member_use
                 color: theme.colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
@@ -44,6 +44,7 @@ class HomeBrandHeader extends ConsumerWidget {
             decoration: BoxDecoration(
               color: theme.cardColor,
               shape: BoxShape.circle,
+              // ignore: deprecated_member_use
               border: Border.all(color: theme.dividerColor.withOpacity(0.6)),
               image: profileState.data?.avatarUrl != null
                   ? DecorationImage(
@@ -53,6 +54,7 @@ class HomeBrandHeader extends ConsumerWidget {
                   : null,
             ),
             child: profileState.data?.avatarUrl == null
+              // ignore: deprecated_member_use
                 ? Icon(Icons.person_outline, color: theme.colorScheme.onSurface.withOpacity(0.6))
                 : null,
           ),
